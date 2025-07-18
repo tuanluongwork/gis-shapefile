@@ -55,7 +55,7 @@ void runSpatialQuery(gis::ShapefileReader& reader) {
             auto records = reader.readRecordsInBounds(query_bounds);
             std::cout << "Found " << records.size() << " intersecting records\n";
             
-            for (size_t i = 0; i < std::min(5ul, records.size()); ++i) {
+            for (size_t i = 0; i < std::min(static_cast<size_t>(5), records.size()); ++i) {
                 const auto& record = records[i];
                 if (record && record->geometry) {
                     gis::BoundingBox bounds = record->geometry->getBounds();

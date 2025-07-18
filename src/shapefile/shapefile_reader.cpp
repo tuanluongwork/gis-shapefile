@@ -198,6 +198,27 @@ std::vector<std::unique_ptr<ShapeRecord>> ShapefileReader::readAllRecords() {
     return records;
 }
 
+std::vector<std::unique_ptr<ShapeRecord>> ShapefileReader::readRecordsInBounds(const BoundingBox& bbox) {
+    std::vector<std::unique_ptr<ShapeRecord>> records;
+    
+    if (!is_open_) return records;
+    
+    // Read all records and filter by bounding box
+    for (uint32_t i = 0; i < record_count_; ++i) {
+        auto record = readRecord(i);
+        if (record && record->geometry) {
+            BoundingBox record_bounds = record->geometry->getBounds();
+            
+            // Check if the record's bounding box intersects with the query bbox
+            if (bbox.intersects(record_bounds)) {
+                records.push_back(std::move(record));
+            }
+        }
+    }
+    
+    return records;
+}
+
 std::unique_ptr<Geometry> ShapefileReader::readGeometry(std::ifstream& file, ShapeType type) {
     switch (type) {
         case ShapeType::Point:

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geometry.h"
+#include "shapefile_reader.h"
 #include <string>
 #include <vector>
 #include <memory>

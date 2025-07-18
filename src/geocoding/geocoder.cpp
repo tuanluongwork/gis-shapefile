@@ -4,6 +4,7 @@
 #include <sstream>
 #include <regex>
 #include <cmath>
+#include <cctype>
 
 namespace gis {
 
@@ -113,7 +114,8 @@ std::string AddressParser::normalize(const std::string& address) const {
     std::string normalized = address;
     
     // Convert to uppercase
-    std::transform(normalized.begin(), normalized.end(), normalized.begin(), ::toupper);
+    std::transform(normalized.begin(), normalized.end(), normalized.begin(), 
+                   [](unsigned char c) { return std::toupper(c); });
     
     // Remove common punctuation
     std::regex punct_regex("[,\\.]");
@@ -196,6 +198,7 @@ Geocoder::Geocoder() = default;
 Geocoder::~Geocoder() = default;
 
 bool Geocoder::loadAddressData(const std::string& shapefile_path, const std::string& address_field) {
+    (void)address_field; // Mark as intentionally unused for now
     ShapefileReader reader(shapefile_path);
     
     if (!reader.open()) {
@@ -416,6 +419,36 @@ double Geocoder::jaroWinklerSimilarity(const std::string& s1, const std::string&
     }
     
     return static_cast<double>(common_chars) / max_len;
+}
+
+double Geocoder::levenshteinDistance(const std::string& s1, const std::string& s2) const {
+    size_t len1 = s1.length();
+    size_t len2 = s2.length();
+    
+    if (len1 == 0) return static_cast<double>(len2);
+    if (len2 == 0) return static_cast<double>(len1);
+    
+    std::vector<std::vector<size_t>> matrix(len1 + 1, std::vector<size_t>(len2 + 1));
+    
+    for (size_t i = 0; i <= len1; ++i) {
+        matrix[i][0] = i;
+    }
+    for (size_t j = 0; j <= len2; ++j) {
+        matrix[0][j] = j;
+    }
+    
+    for (size_t i = 1; i <= len1; ++i) {
+        for (size_t j = 1; j <= len2; ++j) {
+            size_t cost = (s1[i-1] == s2[j-1]) ? 0 : 1;
+            matrix[i][j] = std::min({
+                matrix[i-1][j] + 1,      // deletion
+                matrix[i][j-1] + 1,      // insertion
+                matrix[i-1][j-1] + cost  // substitution
+            });
+        }
+    }
+    
+    return static_cast<double>(matrix[len1][len2]);
 }
 
 std::string Geocoder::getStats() const {
