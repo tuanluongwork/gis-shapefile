@@ -62,3 +62,6 @@ doc/latex/
 test_output/
 benchmarks/
 performance_results.txt
+
+LICENSE
+PROJECT_SUMMARY.md
