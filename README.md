@@ -38,8 +38,6 @@ This project showcases a production-ready C++ implementation for:
 - **Testing**: Google Test framework
 - **Documentation**: Doxygen
 - **Packaging**: Conan/vcpkg
-- **CI/CD**: GitHub Actions
-- **Cloud**: Google Cloud Platform integration
 
 ## 🚀 Key Features
 
@@ -105,12 +103,4 @@ This project demonstrates capabilities relevant to:
 - **Geocoding**: 10,000+ addresses/second (single-threaded)
 - **Spatial Queries**: Sub-millisecond point-in-polygon lookups
 - **Memory Usage**: Optimized for large datasets (>1GB shapefiles)
-
-## 🌐 Cloud Integration
-
-Examples included for:
-- Google Cloud Storage integration
-- Cloud Functions deployment
-- BigQuery spatial analytics
-- Kubernetes orchestration
 
