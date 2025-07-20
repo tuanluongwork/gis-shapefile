@@ -1,5 +1,6 @@
 # Build directories
 build/
+build-vs/
 cmake-build-*/
 .vs/
 out/
@@ -33,12 +34,6 @@ Makefile
 *.deb
 *.rpm
 
-# Data files (user should provide their own)
-data/*.shp
-data/*.shx
-data/*.dbf
-data/*.prj
-
 # Temporary files
 *.tmp
 *.temp
@@ -62,6 +57,3 @@ doc/latex/
 test_output/
 benchmarks/
 performance_results.txt
-
-LICENSE
-PROJECT_SUMMARY.md

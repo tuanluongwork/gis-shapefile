@@ -132,6 +132,10 @@ std::string AddressParser::normalize(const std::string& address) const {
     return expandAbbreviations(normalized);
 }
 
+const std::unordered_map<std::string, std::string>& AddressParser::getStateAbbreviations() const {
+    return state_abbreviations_;
+}
+
 std::vector<std::string> AddressParser::tokenize(const std::string& text) const {
     std::vector<std::string> tokens;
     std::istringstream iss(text);
@@ -212,25 +216,29 @@ bool Geocoder::loadAddressData(const std::string& shapefile_path, const std::str
 }
 
 GeocodeResult Geocoder::geocode(const std::string& address) const {
+    // First try standard address parsing
     ParsedAddress parsed = parser_.parse(address);
     
-    if (!parsed.isValid()) {
-        return GeocodeResult();  // Empty result with 0 confidence
+    if (parsed.isValid()) {
+        std::vector<GeocodeResult> candidates = findCandidates(parsed);
+        
+        if (!candidates.empty()) {
+            // Sort by confidence and return best match
+            std::sort(candidates.begin(), candidates.end(), 
+                      [](const GeocodeResult& a, const GeocodeResult& b) {
+                          return a.confidence_score > b.confidence_score;
+                      });
+            return candidates[0];
+        }
     }
     
-    std::vector<GeocodeResult> candidates = findCandidates(parsed);
-    
-    if (candidates.empty()) {
-        return GeocodeResult();
+    // If no standard address match, try state/place name lookup
+    GeocodeResult state_result = geocodeStateName(address);
+    if (state_result.confidence_score > 0) {
+        return state_result;
     }
     
-    // Sort by confidence and return best match
-    std::sort(candidates.begin(), candidates.end(), 
-              [](const GeocodeResult& a, const GeocodeResult& b) {
-                  return a.confidence_score > b.confidence_score;
-              });
-    
-    return candidates[0];
+    return GeocodeResult();  // Empty result with 0 confidence
 }
 
 std::vector<GeocodeResult> Geocoder::geocodeBatch(const std::vector<std::string>& addresses) const {
@@ -459,6 +467,69 @@ std::string Geocoder::getStats() const {
     oss << "  City Index Entries: " << index_.city_index.size() << "\n";
     oss << "  Zip Index Entries: " << index_.zip_index.size() << "\n";
     return oss.str();
+}
+
+GeocodeResult Geocoder::geocodeStateName(const std::string& query) const {
+    std::string normalized_query = parser_.normalize(query);
+    
+    // Check state abbreviations first
+    if (normalized_query.length() == 2) {
+        const auto& abbrevs = parser_.getStateAbbreviations();
+        auto abbrev_it = abbrevs.find(normalized_query);
+        if (abbrev_it != abbrevs.end()) {
+            normalized_query = abbrev_it->second;
+        }
+    }
+    
+    GeocodeResult best_result;
+    double best_similarity = 0.0;
+    
+    // Search through all records for state name matches
+    for (const auto& record : address_data_) {
+        if (!record || !record->geometry) continue;
+        
+        // Try NAME_1 field (primary state name)
+        std::string state_name = extractAddressFromRecord(*record, "NAME_1");
+        if (!state_name.empty()) {
+            std::string normalized_state = parser_.normalize(state_name);
+            double similarity = jaroWinklerSimilarity(normalized_query, normalized_state);
+            
+            if (similarity > best_similarity && similarity > 0.8) {
+                best_similarity = similarity;
+                
+                // Calculate centroid of the state polygon
+                BoundingBox bounds = record->geometry->getBounds();
+                Point2D centroid((bounds.min_x + bounds.max_x) / 2.0, 
+                               (bounds.min_y + bounds.max_y) / 2.0);
+                
+                ParsedAddress parsed_address;
+                parsed_address.state = state_name;
+                parsed_address.full_address = state_name;
+                
+                best_result = GeocodeResult(centroid, parsed_address, similarity);
+                best_result.match_type = (similarity > 0.95) ? "exact" : "fuzzy";
+            }
+        }
+        
+        // Also try ISO_1 field for state codes
+        std::string iso_code = extractAddressFromRecord(*record, "ISO_1");
+        if (!iso_code.empty() && iso_code.length() >= 3) {
+            std::string state_code = iso_code.substr(3); // Remove "US-" prefix
+            if (parser_.normalize(state_code) == normalized_query) {
+                BoundingBox bounds = record->geometry->getBounds();
+                Point2D centroid((bounds.min_x + bounds.max_x) / 2.0, 
+                               (bounds.min_y + bounds.max_y) / 2.0);
+                
+                ParsedAddress parsed_address;
+                parsed_address.state = extractAddressFromRecord(*record, "NAME_1");
+                parsed_address.full_address = parsed_address.state;
+                
+                return GeocodeResult(centroid, parsed_address, 1.0); // Exact match
+            }
+        }
+    }
+    
+    return best_result;
 }
 
 } // namespace gis

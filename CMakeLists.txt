@@ -46,16 +46,6 @@ target_include_directories(gis-core PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-# CLI Tools
-add_executable(shp-info tools/shp_info.cpp)
-target_link_libraries(shp-info gis-core Threads::Threads)
-
-add_executable(geocoder tools/geocoder_cli.cpp)
-target_link_libraries(geocoder gis-core Threads::Threads)
-
-add_executable(spatial-query tools/spatial_query.cpp)
-target_link_libraries(spatial-query gis-core Threads::Threads)
-
 # Web API Server
 add_executable(gis-server server/main.cpp server/http_server.cpp)
 target_link_libraries(gis-server gis-core Threads::Threads)
@@ -65,36 +55,8 @@ if(WIN32)
     target_link_libraries(gis-server ws2_32)
 endif()
 
-# Examples
-add_executable(example-basic examples/basic_usage.cpp)
-target_link_libraries(example-basic gis-core)
-
-add_executable(example-performance examples/performance_demo.cpp)
-target_link_libraries(example-performance gis-core Threads::Threads)
-
-# Testing (if Google Test is available)
-find_package(GTest QUIET)
-if(GTest_FOUND)
-    enable_testing()
-    
-    add_executable(unit-tests
-        tests/test_shapefile_reader.cpp
-        tests/test_geocoder.cpp
-        tests/test_spatial_index.cpp
-    )
-    
-    target_link_libraries(unit-tests 
-        gis-core 
-        GTest::gtest 
-        GTest::gtest_main
-        Threads::Threads
-    )
-    
-    add_test(NAME UnitTests COMMAND unit-tests)
-endif()
-
 # Installation
-install(TARGETS gis-core shp-info geocoder spatial-query gis-server
+install(TARGETS gis-core gis-server
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib

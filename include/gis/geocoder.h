@@ -72,6 +72,12 @@ public:
      * @return Normalized address string
      */
     std::string normalize(const std::string& address) const;
+    
+    /**
+     * @brief Get state abbreviations map
+     * @return Reference to state abbreviations map
+     */
+    const std::unordered_map<std::string, std::string>& getStateAbbreviations() const;
 
 private:
     void initializeAbbreviations();
@@ -143,6 +149,7 @@ public:
 private:
     void buildIndex();
     std::vector<GeocodeResult> findCandidates(const ParsedAddress& parsed_address) const;
+    GeocodeResult geocodeStateName(const std::string& query) const;
     double calculateConfidence(const ParsedAddress& input, const ParsedAddress& candidate) const;
     double calculateDistance(const Point2D& p1, const Point2D& p2) const;
     std::string extractAddressFromRecord(const ShapeRecord& record, const std::string& field_name) const;
