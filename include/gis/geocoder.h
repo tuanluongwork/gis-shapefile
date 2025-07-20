@@ -2,6 +2,7 @@
 
 #include "geometry.h"
 #include "shapefile_reader.h"
+#include "spatial_index.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -104,6 +105,7 @@ private:
     std::vector<std::unique_ptr<ShapeRecord>> address_data_;
     AddressIndex index_;
     AddressParser parser_;
+    SpatialIndex spatial_index_;
     
 public:
     Geocoder();

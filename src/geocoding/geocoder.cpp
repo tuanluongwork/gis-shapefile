@@ -212,6 +212,9 @@ bool Geocoder::loadAddressData(const std::string& shapefile_path, const std::str
     address_data_ = reader.readAllRecords();
     buildIndex();
     
+    // Build spatial index for efficient point-in-polygon queries
+    spatial_index_.buildIndex(address_data_);
+    
     return !address_data_.empty();
 }
 
@@ -253,6 +256,30 @@ std::vector<GeocodeResult> Geocoder::geocodeBatch(const std::vector<std::string>
 }
 
 GeocodeResult Geocoder::reverseGeocode(const Point2D& point, double max_distance) const {
+    // First try spatial index for exact point-in-polygon testing
+    ShapeRecord* containing_record = spatial_index_.pointInPolygon(point);
+    
+    if (containing_record) {
+        // Extract state name from GADM data (NAME_1 field)
+        std::string address_str = extractAddressFromRecord(*containing_record, "NAME_1");
+        
+        if (!address_str.empty()) {
+            ParsedAddress parsed;
+            parsed.state = address_str;
+            parsed.full_address = address_str;
+            
+            // Get centroid for result coordinates
+            BoundingBox bounds = containing_record->geometry->getBounds();
+            Point2D centroid((bounds.min_x + bounds.max_x) / 2.0, 
+                            (bounds.min_y + bounds.max_y) / 2.0);
+            
+            GeocodeResult result(centroid, parsed, 1.0); // High confidence for exact polygon match
+            result.match_type = "reverse";
+            return result;
+        }
+    }
+    
+    // Fallback to distance-based matching if spatial index fails
     double min_distance = std::numeric_limits<double>::max();
     GeocodeResult best_result;
     
@@ -269,12 +296,17 @@ GeocodeResult Geocoder::reverseGeocode(const Point2D& point, double max_distance
         if (distance <= max_distance && distance < min_distance) {
             min_distance = distance;
             
-            // Extract address from record
-            std::string address_str = extractAddressFromRecord(*record, "ADDRESS");
-            ParsedAddress parsed = parser_.parse(address_str);
+            // Extract state name from GADM data (NAME_1 field)
+            std::string address_str = extractAddressFromRecord(*record, "NAME_1");
             
-            best_result = GeocodeResult(centroid, parsed, 1.0 - (distance / max_distance));
-            best_result.match_type = "reverse";
+            if (!address_str.empty()) {
+                ParsedAddress parsed;
+                parsed.state = address_str;
+                parsed.full_address = address_str;
+                
+                best_result = GeocodeResult(centroid, parsed, 1.0 - (distance / max_distance));
+                best_result.match_type = "reverse";
+            }
         }
     }
     
