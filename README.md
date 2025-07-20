@@ -2,7 +2,7 @@
 
 A modern C++ library and application suite for processing ESRI Shapefiles with geocoding capabilities.
 
-## 🎯 Project Overview
+## 1. Project Overview
 
 This project showcases a production-ready C++ implementation for:
 - **Shapefile Reading & Processing**: Complete ESRI Shapefile (.shp, .shx, .dbf) parser
@@ -11,18 +11,18 @@ This project showcases a production-ready C++ implementation for:
 - **Spatial Indexing**: R-tree implementation for efficient spatial queries
 - **Cross-Platform Support**: Windows, Linux, and macOS compatibility
 
-## 🔧 Building the Project
+## 2. Building the Project
 
-### Prerequisites
+### 2.1. Prerequisites
 
 **Required:**
 - **C++17 Compiler**: GCC 9+, Clang 10+, or MSVC 2019+
 - **CMake**: Version 3.15 or newer
 - **Git**: For cloning the repository
 
-### Platform-Specific Setup
+### 2.2. Platform-Specific Setup
 
-#### Windows (Visual Studio)
+#### 2.2.1. Windows (Visual Studio)
 ```cmd
 # Install prerequisites (using vcpkg or manual installation)
 # Ensure CMake and Visual Studio 2019+ are installed
@@ -40,7 +40,7 @@ cmake --build . --config Release
 cmake --build . --config Debug
 ```
 
-#### Linux (Ubuntu/Debian)
+#### 2.2.2. Linux (Ubuntu/Debian)
 ```bash
 # Install dependencies
 sudo apt-get update
@@ -60,7 +60,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Debug
 make -j$(nproc)
 ```
 
-### Running the Applications
+### 3. Running the Applications
 
 ```bash
 build\Debug\gis-server.exe --port 8080 --data data/gadm41_USA_1
