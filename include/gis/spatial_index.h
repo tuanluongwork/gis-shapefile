@@ -16,8 +16,9 @@ struct RTreeNode {
     bool is_leaf;
     std::vector<std::unique_ptr<RTreeNode>> children;
     std::vector<size_t> data_indices;  // For leaf nodes
+    RTreeNode* parent;  // Parent pointer for upward propagation
     
-    RTreeNode(bool leaf = false) : is_leaf(leaf) {}
+    RTreeNode(bool leaf = false) : is_leaf(leaf), parent(nullptr) {}
 };
 
 /**
@@ -101,6 +102,9 @@ private:
     double calculateEnlargement(const BoundingBox& existing, const BoundingBox& new_bounds) const;
     RTreeNode* chooseLeaf(const BoundingBox& bounds) const;
     void adjustTree(RTreeNode* node);
+    void updateNodeBounds(RTreeNode* node);
+    void updateLeafNodeBounds(RTreeNode* node);
+    void updateInternalNodeBounds(RTreeNode* node);
     
     struct DistanceItem {
         size_t index;

@@ -54,6 +54,9 @@ void RTree::insertHelper(RTreeNode* node, const BoundingBox& bounds, size_t data
         
         if (best_child) {
             insertHelper(best_child, bounds, data_index);
+            
+            // Update this node's bounds after insertion
+            updateNodeBounds(node);
         }
     }
 }
@@ -146,53 +149,72 @@ std::vector<size_t> RTree::withinDistance(const Point2D& point, double distance)
 }
 
 void RTree::splitNode(RTreeNode* node) {
-    // Simplified node splitting - production code would use more sophisticated algorithms
-    if (!node->is_leaf || node->data_indices.size() <= max_entries_) {
+    // Only split if node is overcrowded
+    if ((!node->is_leaf && node->children.size() <= max_entries_) ||
+        (node->is_leaf && node->data_indices.size() <= max_entries_)) {
         return;
     }
     
-    // Create new leaf node
-    auto new_node = std::make_unique<RTreeNode>(true);
+    // Create new sibling node
+    auto new_node = std::make_unique<RTreeNode>(node->is_leaf);
+    new_node->parent = node->parent;
     
-    // Split data indices roughly in half
-    size_t split_point = node->data_indices.size() / 2;
-    
-    new_node->data_indices.assign(node->data_indices.begin() + split_point, 
-                                 node->data_indices.end());
-    node->data_indices.resize(split_point);
-    
-    // Recalculate bounding boxes
-    node->bounds = BoundingBox();
-    for (size_t idx : node->data_indices) {
-        if (idx < object_bounds_.size()) {
-            const BoundingBox& bounds = object_bounds_[idx];
-            if (node->data_indices.size() == 1) {
-                node->bounds = bounds;
-            } else {
-                node->bounds.min_x = std::min(node->bounds.min_x, bounds.min_x);
-                node->bounds.min_y = std::min(node->bounds.min_y, bounds.min_y);
-                node->bounds.max_x = std::max(node->bounds.max_x, bounds.max_x);
-                node->bounds.max_y = std::max(node->bounds.max_y, bounds.max_y);
-            }
+    if (node->is_leaf) {
+        // Split leaf node data
+        size_t split_point = node->data_indices.size() / 2;
+        
+        new_node->data_indices.assign(node->data_indices.begin() + split_point, 
+                                     node->data_indices.end());
+        node->data_indices.resize(split_point);
+        
+        // Recalculate bounding boxes for both nodes
+        updateLeafNodeBounds(node);
+        updateLeafNodeBounds(new_node.get());
+    } else {
+        // Split internal node children
+        size_t split_point = node->children.size() / 2;
+        
+        // Move children to new node
+        for (size_t i = split_point; i < node->children.size(); ++i) {
+            node->children[i]->parent = new_node.get();
+            new_node->children.push_back(std::move(node->children[i]));
         }
+        node->children.resize(split_point);
+        
+        // Recalculate bounding boxes for both nodes
+        updateInternalNodeBounds(node);
+        updateInternalNodeBounds(new_node.get());
     }
     
-    new_node->bounds = BoundingBox();
-    for (size_t idx : new_node->data_indices) {
-        if (idx < object_bounds_.size()) {
-            const BoundingBox& bounds = object_bounds_[idx];
-            if (new_node->data_indices.size() == 1) {
-                new_node->bounds = bounds;
-            } else {
-                new_node->bounds.min_x = std::min(new_node->bounds.min_x, bounds.min_x);
-                new_node->bounds.min_y = std::min(new_node->bounds.min_y, bounds.min_y);
-                new_node->bounds.max_x = std::max(new_node->bounds.max_x, bounds.max_x);
-                new_node->bounds.max_y = std::max(new_node->bounds.max_y, bounds.max_y);
-            }
+    // Handle parent integration
+    if (node->parent == nullptr) {
+        // Node is root - create new root
+        auto new_root = std::make_unique<RTreeNode>(false);
+        new_root->children.push_back(std::move(root_));
+        new_root->children.push_back(std::move(new_node));
+        
+        // Set parent pointers
+        new_root->children[0]->parent = new_root.get();
+        new_root->children[1]->parent = new_root.get();
+        
+        // Update root bounds
+        updateInternalNodeBounds(new_root.get());
+        
+        root_ = std::move(new_root);
+    } else {
+        // Add new node to parent
+        RTreeNode* parent = node->parent;
+        new_node->parent = parent;
+        parent->children.push_back(std::move(new_node));
+        
+        // Update parent bounds
+        updateInternalNodeBounds(parent);
+        
+        // Check if parent needs splitting
+        if (parent->children.size() > max_entries_) {
+            splitNode(parent);
         }
     }
-    
-    // This is a simplified implementation - production code would handle tree restructuring
 }
 
 double RTree::calculateEnlargement(const BoundingBox& existing, const BoundingBox& new_bounds) const {
@@ -203,6 +225,53 @@ double RTree::calculateEnlargement(const BoundingBox& existing, const BoundingBo
     enlarged.max_y = std::max(existing.max_y, new_bounds.max_y);
     
     return enlarged.area() - existing.area();
+}
+
+void RTree::updateNodeBounds(RTreeNode* node) {
+    if (!node) return;
+    
+    if (node->is_leaf) {
+        updateLeafNodeBounds(node);
+    } else {
+        updateInternalNodeBounds(node);
+    }
+}
+
+void RTree::updateLeafNodeBounds(RTreeNode* node) {
+    if (!node || !node->is_leaf || node->data_indices.empty()) return;
+    
+    bool first = true;
+    for (size_t idx : node->data_indices) {
+        if (idx < object_bounds_.size()) {
+            const BoundingBox& bounds = object_bounds_[idx];
+            if (first) {
+                node->bounds = bounds;
+                first = false;
+            } else {
+                node->bounds.min_x = std::min(node->bounds.min_x, bounds.min_x);
+                node->bounds.min_y = std::min(node->bounds.min_y, bounds.min_y);
+                node->bounds.max_x = std::max(node->bounds.max_x, bounds.max_x);
+                node->bounds.max_y = std::max(node->bounds.max_y, bounds.max_y);
+            }
+        }
+    }
+}
+
+void RTree::updateInternalNodeBounds(RTreeNode* node) {
+    if (!node || node->is_leaf || node->children.empty()) return;
+    
+    bool first = true;
+    for (const auto& child : node->children) {
+        if (first) {
+            node->bounds = child->bounds;
+            first = false;
+        } else {
+            node->bounds.min_x = std::min(node->bounds.min_x, child->bounds.min_x);
+            node->bounds.min_y = std::min(node->bounds.min_y, child->bounds.min_y);
+            node->bounds.max_x = std::max(node->bounds.max_x, child->bounds.max_x);
+            node->bounds.max_y = std::max(node->bounds.max_y, child->bounds.max_y);
+        }
+    }
 }
 
 void RTree::clear() {
