@@ -1,6 +1,6 @@
 # GIS Shapefile Processor & Geocoder
 
-A modern C++ library and application suite for processing ESRI Shapefiles with geocoding capabilities.
+A modern C++ library and web application for processing ESRI Shapefiles with geocoding capabilities.
 
 ## 1. Project Overview
 
@@ -64,4 +64,47 @@ make -j$(nproc)
 
 ```bash
 build\Debug\gis-server.exe --port 8080 --data data/gadm41_USA_1
+```
+
+### 3. Testing the Applications
+
+```bash
+GET http://localhost:8080/health
+{
+  "status": "healthy",
+  "data_loaded": true,
+  "timestamp": "2025-07-21T14:30:46Z"
+}
+GET http://localhost:8080/stats
+{
+    "service": "GIS Geocoding API",
+    "data_loaded": true,
+    "geocoder_stats": Geocoder Statistics:\n  Total Records: 3148\n  Street Index Entries: 0\n  City Index Entries: 0\n  Zip Index Entries: 0\n,
+    "timestamp": "2025-07-21T14:25:19Z"
+}
+GET http://localhost:8080/geocode?address=TEXAS
+{
+  "input_address": "TEXAS",
+  "success": true,
+  "result": {
+    "latitude": 31.79466057,
+    "longitude": -95.66297150,
+    "matched_address": "Texas",
+    "confidence": 1.000,
+    "match_type": "exact"
+  }
+}
+GET http://localhost:8080/reverse?lat=40.7128&lng=-74.0060
+{
+  "input_coordinates": {
+    "latitude": 40.71280000,
+    "longitude": -74.00600000
+  },
+  "success": true,
+  "result": {
+    "address": "New York",
+    "confidence": 1.000,
+    "match_type": "reverse"
+  }
+}
 ```
