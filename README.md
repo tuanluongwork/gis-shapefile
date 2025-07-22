@@ -111,3 +111,5 @@ GET http://localhost:8080/reverse?lat=40.7128&lng=-74.0060
 
 ## 4. References
 https://en.wikipedia.org/wiki/Shapefile
+
+https://www.esri.com/content/dam/esrisites/sitecore-archive/Files/Pdfs/library/whitepapers/pdfs/shapefile.pdf
