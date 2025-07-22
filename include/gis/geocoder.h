@@ -153,6 +153,7 @@ private:
     std::vector<GeocodeResult> findCandidates(const ParsedAddress& parsed_address) const;
     GeocodeResult geocodeStateName(const std::string& query) const;
     double calculateConfidence(const ParsedAddress& input, const ParsedAddress& candidate) const;
+    double calculateStateConfidence(const std::string& input_state, const std::string& candidate_state) const;
     double calculateDistance(const Point2D& p1, const Point2D& p2) const;
     std::string extractAddressFromRecord(const ShapeRecord& record, const std::string& field_name) const;
     

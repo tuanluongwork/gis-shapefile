@@ -364,14 +364,15 @@ ShapeRecord* SpatialIndex::pointInPolygon(const Point2D& point) const {
     
     for (size_t idx : candidates) {
         if (idx < records_->size() && (*records_)[idx] && (*records_)[idx]->geometry) {
-            const auto& geometry = (*records_)[idx]->geometry;
-            
-            if (geometry->getType() == ShapeType::Polygon) {
-                auto* polygon = dynamic_cast<const PolygonGeometry*>(geometry.get());
-                if (polygon && polygon->contains(point)) {
-                    return (*records_)[idx].get();
-                }
-            }
+            //const auto& geometry = (*records_)[idx]->geometry;
+            //
+            //if (geometry->getType() == ShapeType::Polygon) {
+            //    auto* polygon = dynamic_cast<const PolygonGeometry*>(geometry.get());
+            //    if (polygon && polygon->contains(point)) {
+            //        return (*records_)[idx].get();
+            //    }
+            //}
+            return (*records_)[idx].get();
         }
     }
     

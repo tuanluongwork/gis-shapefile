@@ -129,7 +129,7 @@ std::string AddressParser::normalize(const std::string& address) const {
     normalized.erase(0, normalized.find_first_not_of(" \t"));
     normalized.erase(normalized.find_last_not_of(" \t") + 1);
     
-    return expandAbbreviations(normalized);
+    return normalized;
 }
 
 const std::unordered_map<std::string, std::string>& AddressParser::getStateAbbreviations() const {
@@ -177,7 +177,9 @@ bool AddressParser::isZipCode(const std::string& str) const {
 }
 
 bool ParsedAddress::isValid() const {
-    return !house_number.empty() && !street_name.empty();
+    // For GADM state-level data, we consider an address valid if it has state info
+    // or any content in full_address that could be a state query
+    return !state.empty() || !full_address.empty();
 }
 
 std::string ParsedAddress::toString() const {
@@ -314,32 +316,36 @@ GeocodeResult Geocoder::reverseGeocode(const Point2D& point, double max_distance
 }
 
 void Geocoder::buildIndex() {
+    // Clear existing indices - using only city_index for unified state indexing
     index_.street_index.clear();
     index_.city_index.clear();
     index_.zip_index.clear();
     
+    // Build unified state index optimized for GADM administrative boundary data
     for (size_t i = 0; i < address_data_.size(); ++i) {
         const auto& record = address_data_[i];
         if (!record) continue;
         
-        std::string address_str = extractAddressFromRecord(*record, "ADDRESS");
-        ParsedAddress parsed = parser_.parse(address_str);
-        
-        // Index by street name
-        if (!parsed.street_name.empty()) {
-            std::string normalized_street = parser_.normalize(parsed.street_name);
-            index_.street_index[normalized_street].push_back(i);
+        // Extract state name from NAME_1 field (primary state name)
+        std::string state_name = extractAddressFromRecord(*record, "NAME_1");
+        if (!state_name.empty()) {
+            // Index by normalized state name for fuzzy matching
+            std::string normalized_state = parser_.normalize(state_name);
+            index_.city_index[normalized_state].push_back(i);
+            
+            // Also index the original case for exact matching
+            index_.city_index[state_name].push_back(i);
         }
         
-        // Index by city
-        if (!parsed.city.empty()) {
-            std::string normalized_city = parser_.normalize(parsed.city);
-            index_.city_index[normalized_city].push_back(i);
-        }
-        
-        // Index by zip code
-        if (!parsed.zip_code.empty()) {
-            index_.zip_index[parsed.zip_code].push_back(i);
+        // Index all standard US state abbreviations for this record
+        if (!state_name.empty()) {
+            // Find matching state abbreviation and index it
+            for (const auto& abbrev_pair : parser_.getStateAbbreviations()) {
+                if (abbrev_pair.second == parser_.normalize(state_name)) {
+                    index_.city_index[abbrev_pair.first].push_back(i);
+                    break;
+                }
+            }
         }
     }
 }
@@ -348,30 +354,60 @@ std::vector<GeocodeResult> Geocoder::findCandidates(const ParsedAddress& parsed_
     std::vector<GeocodeResult> candidates;
     std::vector<size_t> candidate_indices;
     
-    // Find candidates by street name
-    std::string normalized_street = parser_.normalize(parsed_address.street_name);
-    auto street_it = index_.street_index.find(normalized_street);
-    if (street_it != index_.street_index.end()) {
-        candidate_indices.insert(candidate_indices.end(), 
-                                street_it->second.begin(), street_it->second.end());
+    // Unified state-only lookup strategy using single index
+    std::string search_term = parsed_address.state.empty() ? 
+                             parsed_address.full_address : parsed_address.state;
+    
+    if (!search_term.empty()) {
+        // Strategy 1: Direct exact match
+        auto exact_it = index_.city_index.find(search_term);
+        if (exact_it != index_.city_index.end()) {
+            candidate_indices.insert(candidate_indices.end(), 
+                                    exact_it->second.begin(), exact_it->second.end());
+        }
+        
+        // Strategy 2: Normalized match
+        std::string normalized_term = parser_.normalize(search_term);
+        auto normalized_it = index_.city_index.find(normalized_term);
+        if (normalized_it != index_.city_index.end()) {
+            candidate_indices.insert(candidate_indices.end(), 
+                                    normalized_it->second.begin(), normalized_it->second.end());
+        }
+        
+        // Strategy 3: State abbreviation expansion (if 2-letter code)
+        if (search_term.length() == 2) {
+            const auto& abbrevs = parser_.getStateAbbreviations();
+            auto abbrev_it = abbrevs.find(parser_.normalize(search_term));
+            if (abbrev_it != abbrevs.end()) {
+                auto expanded_it = index_.city_index.find(abbrev_it->second);
+                if (expanded_it != index_.city_index.end()) {
+                    candidate_indices.insert(candidate_indices.end(), 
+                                            expanded_it->second.begin(), expanded_it->second.end());
+                }
+            }
+        }
     }
     
-    // Remove duplicates
+    // Remove duplicates and sort
     std::sort(candidate_indices.begin(), candidate_indices.end());
     candidate_indices.erase(std::unique(candidate_indices.begin(), candidate_indices.end()), 
                            candidate_indices.end());
     
-    // Evaluate candidates
+    // Evaluate candidates with simplified state-focused confidence calculation
     for (size_t idx : candidate_indices) {
         if (idx >= address_data_.size() || !address_data_[idx] || !address_data_[idx]->geometry) {
             continue;
         }
         
         const auto& record = address_data_[idx];
-        std::string address_str = extractAddressFromRecord(*record, "ADDRESS");
-        ParsedAddress candidate_address = parser_.parse(address_str);
         
-        double confidence = calculateConfidence(parsed_address, candidate_address);
+        // Create candidate address from GADM data
+        ParsedAddress candidate_address;
+        candidate_address.state = extractAddressFromRecord(*record, "NAME_1");
+        candidate_address.full_address = candidate_address.state;
+        
+        // Simplified confidence calculation for state matching
+        double confidence = calculateStateConfidence(search_term, candidate_address.state);
         
         if (confidence > 0.3) {  // Minimum confidence threshold
             BoundingBox bounds = record->geometry->getBounds();
@@ -388,44 +424,40 @@ std::vector<GeocodeResult> Geocoder::findCandidates(const ParsedAddress& parsed_
 }
 
 double Geocoder::calculateConfidence(const ParsedAddress& input, const ParsedAddress& candidate) const {
-    double total_score = 0.0;
-    int components = 0;
-    
-    // Street name similarity (highest weight)
-    if (!input.street_name.empty() && !candidate.street_name.empty()) {
-        double street_similarity = jaroWinklerSimilarity(
-            parser_.normalize(input.street_name), 
-            parser_.normalize(candidate.street_name)
-        );
-        total_score += street_similarity * 0.4;
-        components++;
+    // Simplified confidence calculation focused on state matching
+    return calculateStateConfidence(input.state.empty() ? input.full_address : input.state, 
+                                   candidate.state);
+}
+
+double Geocoder::calculateStateConfidence(const std::string& input_state, const std::string& candidate_state) const {
+    if (input_state.empty() || candidate_state.empty()) {
+        return 0.0;
     }
     
-    // House number match
-    if (!input.house_number.empty() && !candidate.house_number.empty()) {
-        double house_score = (input.house_number == candidate.house_number) ? 1.0 : 0.0;
-        total_score += house_score * 0.3;
-        components++;
+    // Exact match (highest confidence)
+    if (input_state == candidate_state) {
+        return 1.0;
     }
     
-    // City similarity
-    if (!input.city.empty() && !candidate.city.empty()) {
-        double city_similarity = jaroWinklerSimilarity(
-            parser_.normalize(input.city), 
-            parser_.normalize(candidate.city)
-        );
-        total_score += city_similarity * 0.2;
-        components++;
+    // Normalized exact match
+    std::string normalized_input = parser_.normalize(input_state);
+    std::string normalized_candidate = parser_.normalize(candidate_state);
+    if (normalized_input == normalized_candidate) {
+        return 1.0;
     }
     
-    // Zip code match
-    if (!input.zip_code.empty() && !candidate.zip_code.empty()) {
-        double zip_score = (input.zip_code == candidate.zip_code) ? 1.0 : 0.0;
-        total_score += zip_score * 0.1;
-        components++;
+    // State abbreviation match
+    if (input_state.length() == 2) {
+        const auto& abbrevs = parser_.getStateAbbreviations();
+        auto abbrev_it = abbrevs.find(normalized_input);
+        if (abbrev_it != abbrevs.end() && abbrev_it->second == normalized_candidate) {
+            return 1.0; // Perfect abbreviation match
+        }
     }
     
-    return (components > 0) ? total_score : 0.0;
+    // Fuzzy string similarity for partial matches
+    double similarity = jaroWinklerSimilarity(normalized_input, normalized_candidate);
+    return similarity;
 }
 
 double Geocoder::calculateDistance(const Point2D& p1, const Point2D& p2) const {
@@ -495,73 +527,30 @@ std::string Geocoder::getStats() const {
     std::ostringstream oss;
     oss << "Geocoder Statistics:\n";
     oss << "  Total Records: " << address_data_.size() << "\n";
-    oss << "  Street Index Entries: " << index_.street_index.size() << "\n";
-    oss << "  City Index Entries: " << index_.city_index.size() << "\n";
-    oss << "  Zip Index Entries: " << index_.zip_index.size() << "\n";
+    oss << "  Unified State Index Entries: " << index_.city_index.size() << "\n";
+    oss << "  Street Index Entries: " << index_.street_index.size() << " (unused)\n";
+    oss << "  Zip Index Entries: " << index_.zip_index.size() << " (unused)\n";
     return oss.str();
 }
 
 GeocodeResult Geocoder::geocodeStateName(const std::string& query) const {
-    std::string normalized_query = parser_.normalize(query);
+    // Use unified index for efficient state name lookup
+    ParsedAddress parsed;
+    parsed.state = query;
+    parsed.full_address = query;
     
-    // Check state abbreviations first
-    if (normalized_query.length() == 2) {
-        const auto& abbrevs = parser_.getStateAbbreviations();
-        auto abbrev_it = abbrevs.find(normalized_query);
-        if (abbrev_it != abbrevs.end()) {
-            normalized_query = abbrev_it->second;
-        }
+    std::vector<GeocodeResult> candidates = findCandidates(parsed);
+    
+    if (!candidates.empty()) {
+        // Sort by confidence and return best match
+        std::sort(candidates.begin(), candidates.end(), 
+                  [](const GeocodeResult& a, const GeocodeResult& b) {
+                      return a.confidence_score > b.confidence_score;
+                  });
+        return candidates[0];
     }
     
-    GeocodeResult best_result;
-    double best_similarity = 0.0;
-    
-    // Search through all records for state name matches
-    for (const auto& record : address_data_) {
-        if (!record || !record->geometry) continue;
-        
-        // Try NAME_1 field (primary state name)
-        std::string state_name = extractAddressFromRecord(*record, "NAME_1");
-        if (!state_name.empty()) {
-            std::string normalized_state = parser_.normalize(state_name);
-            double similarity = jaroWinklerSimilarity(normalized_query, normalized_state);
-            
-            if (similarity > best_similarity && similarity > 0.8) {
-                best_similarity = similarity;
-                
-                // Calculate centroid of the state polygon
-                BoundingBox bounds = record->geometry->getBounds();
-                Point2D centroid((bounds.min_x + bounds.max_x) / 2.0, 
-                               (bounds.min_y + bounds.max_y) / 2.0);
-                
-                ParsedAddress parsed_address;
-                parsed_address.state = state_name;
-                parsed_address.full_address = state_name;
-                
-                best_result = GeocodeResult(centroid, parsed_address, similarity);
-                best_result.match_type = (similarity > 0.95) ? "exact" : "fuzzy";
-            }
-        }
-        
-        // Also try ISO_1 field for state codes
-        std::string iso_code = extractAddressFromRecord(*record, "ISO_1");
-        if (!iso_code.empty() && iso_code.length() >= 3) {
-            std::string state_code = iso_code.substr(3); // Remove "US-" prefix
-            if (parser_.normalize(state_code) == normalized_query) {
-                BoundingBox bounds = record->geometry->getBounds();
-                Point2D centroid((bounds.min_x + bounds.max_x) / 2.0, 
-                               (bounds.min_y + bounds.max_y) / 2.0);
-                
-                ParsedAddress parsed_address;
-                parsed_address.state = extractAddressFromRecord(*record, "NAME_1");
-                parsed_address.full_address = parsed_address.state;
-                
-                return GeocodeResult(centroid, parsed_address, 1.0); // Exact match
-            }
-        }
-    }
-    
-    return best_result;
+    return GeocodeResult(); // Empty result
 }
 
 } // namespace gis
