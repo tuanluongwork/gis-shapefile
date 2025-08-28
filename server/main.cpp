@@ -1,8 +1,8 @@
 #include "http_server.h"
 #include "gis/geocoder.h"
 #include "gis/shapefile_reader.h"
-#include "gis/logger.h"
-#include "gis/correlation_id.h"
+#include "logger.h"
+#include "correlation_id.h"
 #include <iostream>
 #include <sstream>
 #include <regex>

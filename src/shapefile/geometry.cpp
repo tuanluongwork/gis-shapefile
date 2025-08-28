@@ -1,5 +1,5 @@
 #include "gis/geometry.h"
-#include "gis/logger.h"
+#include "logger.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>

@@ -64,13 +64,13 @@ add_library(gis-core STATIC
     src/shapefile/geometry.cpp
     src/geocoding/geocoder.cpp
     src/spatial/spatial_index.cpp
-    logging-solution/src/logging/correlation_id.cpp
-    logging-solution/src/logging/logger.cpp
+    plogger/src/correlation_id.cpp
+    plogger/src/logger.cpp
 )
 
 target_include_directories(gis-core PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/logging-solution/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/plogger/include>
     $<INSTALL_INTERFACE:include>
 )
 
