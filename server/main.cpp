@@ -1,11 +1,14 @@
 #include "http_server.h"
 #include "gis/geocoder.h"
 #include "gis/shapefile_reader.h"
+#include "gis/logger.h"
+#include "gis/correlation_id.h"
 #include <iostream>
 #include <sstream>
 #include <regex>
 #include <iomanip>
 #include <chrono>
+#include <unistd.h>
 
 class GeocodingAPI {
 private:
@@ -16,28 +19,62 @@ public:
     GeocodingAPI() : data_loaded_(false) {}
     
     bool loadData(const std::string& shapefile_path) {
+        LOG_INFO("GeocodingAPI", "Starting data load", {{"shapefile_path", shapefile_path}});
+        
+        auto start_time = std::chrono::high_resolution_clock::now();
+        
         if (geocoder_.loadAddressData(shapefile_path)) {
             data_loaded_ = true;
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+            
+            LOG_INFO("GeocodingAPI", "Successfully loaded geocoding data", 
+                    {{"shapefile_path", shapefile_path}}, 
+                    {{"load_time_ms", static_cast<double>(duration.count())}});
+            
             std::cout << "Loaded geocoding data from: " << shapefile_path << std::endl;
             return true;
         }
+        
+        LOG_ERROR("GeocodingAPI", "Failed to load geocoding data", 
+                 {{"shapefile_path", shapefile_path}});
         return false;
     }
     
     std::string handleRequest(const std::string& path, const std::string& query) {
+        // Generate correlation ID for this request
+        auto correlation_id = gis::CorrelationIdManager::getInstance().generateCorrelationId();
+        gis::CorrelationIdScope scope(correlation_id);
+        
+        LOG_INFO("GeocodingAPI", "Processing HTTP request", 
+                {{"path", path}, {"query_length", std::to_string(query.length())}});
+        
+        auto start_time = std::chrono::high_resolution_clock::now();
+        std::string response;
+        
         if (path == "/") {
-            return createWelcomeResponse();
+            response = createWelcomeResponse();
         } else if (path == "/geocode") {
-            return handleGeocode(query);
+            response = handleGeocode(query);
         } else if (path == "/reverse") {
-            return handleReverseGeocode(query);
+            response = handleReverseGeocode(query);
         } else if (path == "/health") {
-            return createHealthResponse();
+            response = createHealthResponse();
         } else if (path == "/stats") {
-            return createStatsResponse();
+            response = createStatsResponse();
         } else {
-            return createErrorResponse("Not Found", 404);
+            LOG_WARN("GeocodingAPI", "Unknown endpoint requested", {{"path", path}});
+            response = createErrorResponse("Not Found", 404);
         }
+        
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        
+        LOG_INFO("GeocodingAPI", "HTTP request completed", 
+                {{"path", path}, {"response_size", std::to_string(response.length())}}, 
+                {{"response_time_ms", static_cast<double>(duration.count())}});
+                
+        return response;
     }
     
 private:
@@ -61,18 +98,39 @@ private:
     
     std::string handleGeocode(const std::string& query) {
         if (!data_loaded_) {
+            LOG_WARN("GeocodingAPI", "Geocoding attempted without data loaded", {});
             return createErrorResponse("No geocoding data loaded");
         }
         
         std::string address = extractParameter(query, "address");
         if (address.empty()) {
+            LOG_WARN("GeocodingAPI", "Geocoding request missing address parameter", {});
             return createErrorResponse("Missing 'address' parameter");
         }
         
         // URL decode address
         address = urlDecode(address);
         
+        LOG_DEBUG("GeocodingAPI", "Starting geocoding operation", 
+                 {{"input_address", address}});
+        
+        auto start_time = std::chrono::high_resolution_clock::now();
         gis::GeocodeResult result = geocoder_.geocode(address);
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        
+        if (result.confidence_score > 0) {
+            LOG_INFO("GeocodingAPI", "Geocoding successful", 
+                    {{"input_address", address}, 
+                     {"matched_address", result.matched_address.toString()},
+                     {"confidence", std::to_string(result.confidence_score)},
+                     {"match_type", result.match_type}}, 
+                    {{"geocode_time_ms", static_cast<double>(duration.count())}});
+        } else {
+            LOG_INFO("GeocodingAPI", "Geocoding failed - no match found", 
+                    {{"input_address", address}}, 
+                    {{"geocode_time_ms", static_cast<double>(duration.count())}});
+        }
         
         std::ostringstream json;
         json << "{\n";
@@ -246,6 +304,11 @@ void printUsage(const char* program_name) {
 }
 
 int main(int argc, char* argv[]) {
+    // Initialize logging system first with YAML configuration
+    gis::Logger::getInstance().initialize();
+    LOG_INFO("Main", "Starting GIS Geocoding API Server", 
+             {{"version", "1.0.0"}, {"pid", std::to_string(getpid())}});
+    
     int port = 8080;
     std::string data_path;
     
@@ -262,6 +325,9 @@ int main(int argc, char* argv[]) {
             return 0;
         }
     }
+    
+    LOG_INFO("Main", "Server configuration", 
+            {{"port", std::to_string(port)}, {"data_path", data_path}});
     
     std::cout << "=== GIS Geocoding API Server ===\n\n";
     

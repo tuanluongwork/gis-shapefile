@@ -3,7 +3,6 @@ target_sources(gis-core
     PRIVATE
         shapefile/geometry.cpp
         shapefile/shapefile_reader.cpp
-        shapefile/dbf_reader.cpp
         geocoding/geocoder.cpp
         spatial/spatial_index.cpp
 )

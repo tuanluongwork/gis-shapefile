@@ -1,0 +1,28 @@
+logging:
+  level: "info"
+  file: "logs/gis-server.log"
+  max_file_size: 5242880  # 5MB
+  max_files: 10
+  pattern: '{"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%l","logger":"%n","message":"%v"}'
+  
+  # Component-specific loggers
+  loggers:
+    GeocodingAPI:
+      level: "info"
+    HttpServer:
+      level: "info"
+    ShapefileReader:
+      level: "debug"
+    Geocoder:
+      level: "info"
+    SpatialIndex:
+      level: "warn"
+    PolylineGeometry:
+      level: "debug"
+      
+  # Performance monitoring settings
+  performance:
+    log_slow_queries: true
+    slow_query_threshold_ms: 1000
+    log_memory_usage: true
+    memory_check_interval_ms: 30000

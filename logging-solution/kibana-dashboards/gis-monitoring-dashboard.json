@@ -1,0 +1,47 @@
+{
+  "version": "8.11.0",
+  "objects": [
+    {
+      "id": "gis-logs-*",
+      "type": "index-pattern",
+      "attributes": {
+        "title": "gis-logs-*",
+        "timeFieldName": "@timestamp",
+        "fields": "[{\"name\":\"@timestamp\",\"type\":\"date\",\"searchable\":true,\"aggregatable\":true},{\"name\":\"level\",\"type\":\"string\",\"searchable\":true,\"aggregatable\":true},{\"name\":\"logger\",\"type\":\"string\",\"searchable\":true,\"aggregatable\":true},{\"name\":\"message\",\"type\":\"string\",\"searchable\":true,\"aggregatable\":false},{\"name\":\"service\",\"type\":\"string\",\"searchable\":true,\"aggregatable\":true},{\"name\":\"correlation_id\",\"type\":\"string\",\"searchable\":true,\"aggregatable\":true},{\"name\":\"context.execution_time_ms\",\"type\":\"number\",\"searchable\":true,\"aggregatable\":true},{\"name\":\"context.response_time_ms\",\"type\":\"number\",\"searchable\":true,\"aggregatable\":true},{\"name\":\"context.memory_usage_mb\",\"type\":\"number\",\"searchable\":true,\"aggregatable\":true}]"
+      }
+    },
+    {
+      "id": "gis-system-overview",
+      "type": "dashboard",
+      "attributes": {
+        "title": "GIS System Overview",
+        "description": "Overview dashboard for GIS Geocoding API system monitoring",
+        "panelsJSON": "[{\"version\":\"8.11.0\",\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":15,\"i\":\"1\"},\"panelIndex\":\"1\",\"embeddableConfig\":{},\"panelRefName\":\"panel_1\"}]",
+        "timeRestore": false,
+        "version": 1
+      }
+    },
+    {
+      "id": "gis-performance-monitoring",
+      "type": "dashboard", 
+      "attributes": {
+        "title": "GIS Performance Monitoring",
+        "description": "Performance metrics and monitoring for GIS services",
+        "panelsJSON": "[{\"version\":\"8.11.0\",\"gridData\":{\"x\":0,\"y\":0,\"w\":48,\"h\":28,\"i\":\"1\"},\"panelIndex\":\"1\",\"embeddableConfig\":{},\"panelRefName\":\"panel_1\"}]",
+        "timeRestore": false,
+        "version": 1
+      }
+    },
+    {
+      "id": "gis-error-tracking",
+      "type": "dashboard",
+      "attributes": {
+        "title": "GIS Error Tracking",
+        "description": "Error monitoring and tracking for GIS services", 
+        "panelsJSON": "[{\"version\":\"8.11.0\",\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":15,\"i\":\"1\"},\"panelIndex\":\"1\",\"embeddableConfig\":{},\"panelRefName\":\"panel_1\"}]",
+        "timeRestore": false,
+        "version": 1
+      }
+    }
+  ]
+}
