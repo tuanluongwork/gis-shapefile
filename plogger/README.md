@@ -8,23 +8,24 @@ This directory contains the complete Phase 1: Foundation implementation of the e
 plogger/
 ├── README.md                     # This file
 ├── README-Logging.md             # Detailed implementation guide
-├── docker-compose.yml            # ELK stack orchestration
-├── deploy-logging.sh             # Deployment script
-├── include/gis/                  # C++ logging headers
+├── include/                      # C++ logging headers
 │   ├── logger.h                  # Main logging interface
 │   └── correlation_id.h          # Correlation ID management
-├── src/logging/                  # C++ logging implementation
+├── src/                          # C++ logging implementation
 │   ├── logger.cpp                # Logger implementation
 │   └── correlation_id.cpp        # Correlation ID implementation
 ├── config/                       # Application logging configuration
 │   └── logging.yaml              # Logging settings
-├── elk-config/                   # ELK stack configuration
-│   ├── elasticsearch/            # Elasticsearch settings
-│   ├── logstash/                 # Log processing pipeline
-│   ├── kibana/                   # Visualization platform
-│   └── filebeat/                 # Log shipping agent
-└── kibana-dashboards/           # Pre-built monitoring dashboards
-    └── gis-monitoring-dashboard.json
+└── elk-infrastructure/           # ELK stack deployment
+    ├── docker-compose.yml        # ELK stack orchestration
+    ├── deploy-logging.sh         # Deployment script
+    ├── elk-config/               # ELK stack configuration
+    │   ├── elasticsearch/        # Elasticsearch settings
+    │   ├── logstash/             # Log processing pipeline
+    │   ├── kibana/               # Visualization platform
+    │   └── filebeat/             # Log shipping agent
+    └── kibana-dashboards/        # Pre-built monitoring dashboards
+        └── gis-monitoring-dashboard.json
 ```
 
 ## Quick Start
@@ -32,7 +33,7 @@ plogger/
 ### 1. Deploy the Logging Infrastructure
 
 ```bash
-cd plogger
+cd plogger/elk-infrastructure
 chmod +x deploy-logging.sh
 ./deploy-logging.sh
 ```

@@ -132,14 +132,15 @@ gis-shapefile-main/
 │   └── correlation_id.cpp    # Correlation ID implementation
 ├── config/
 │   └── logging.yaml          # Logging configuration
-├── elk-config/
-│   ├── elasticsearch/        # Elasticsearch configuration
-│   ├── logstash/             # Logstash pipeline configuration
-│   ├── kibana/               # Kibana configuration
-│   └── filebeat/             # Filebeat configuration
-├── scripts/
-│   └── deploy-logging.sh     # Deployment script
-└── docker-compose.yml        # ELK stack orchestration
+└── elk-infrastructure/       # ELK stack deployment
+    ├── docker-compose.yml    # ELK stack orchestration  
+    ├── deploy-logging.sh     # Deployment script
+    ├── elk-config/
+    │   ├── elasticsearch/    # Elasticsearch configuration
+    │   ├── logstash/         # Logstash pipeline configuration
+    │   ├── kibana/           # Kibana configuration
+    │   └── filebeat/         # Filebeat configuration
+    └── kibana-dashboards/    # Pre-built monitoring dashboards
 ```
 
 ## Monitoring and Alerts

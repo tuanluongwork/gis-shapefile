@@ -12,7 +12,7 @@ The project uses Docker and Docker Compose to manage the ELK stack. The C++ appl
 
 **Key commands:**
 
-*   `./deploy-logging.sh`: Deploys the ELK stack using Docker Compose.
+*   `elk-infrastructure/deploy-logging.sh`: Deploys the ELK stack using Docker Compose.
 *   `make build`: Builds the C++ application.
 *   `make run`: Runs the C++ application.
 *   `make test-logging`: Tests the logging infrastructure.
@@ -22,5 +22,5 @@ The project uses Docker and Docker Compose to manage the ELK stack. The C++ appl
 ## Development Conventions
 
 *   **Logging:** The project uses the `spdlog` library for logging. All logs should be structured and should include a correlation ID. The `LOG_INFO`, `LOG_WARN`, `LOG_ERROR`, and `LOG_DEBUG` macros should be used for logging.
-*   **Configuration:** The logging library is configured using a YAML file (`config/logging.yaml`). The ELK stack is configured using a set of YAML and configuration files in the `elk-config` directory.
+*   **Configuration:** The logging library is configured using a YAML file (`config/logging.yaml`). The ELK stack is configured using a set of YAML and configuration files in the `elk-infrastructure/elk-config` directory.
 *   **Dependencies:** The project uses `spdlog` and `yaml-cpp` as C++ dependencies. These are managed using CMake's `FetchContent` module.
