@@ -15,7 +15,6 @@ mkdir -p kibana-dashboards
 
 # Set proper permissions
 echo "Setting permissions..."
-chmod +x scripts/deploy-logging.sh
 chmod 664 elk-config/filebeat/filebeat.yml
 
 # Create logs directory with proper permissions
