@@ -13,12 +13,10 @@ CorrelationIdManager& CorrelationIdManager::getInstance() {
 }
 
 void CorrelationIdManager::setCorrelationId(const std::string& correlation_id) {
-    std::lock_guard<std::mutex> lock(mutex_);
     thread_correlation_id_ = correlation_id;
 }
 
 std::string CorrelationIdManager::getCorrelationId() const {
-    std::lock_guard<std::mutex> lock(mutex_);
     if (thread_correlation_id_.empty()) {
         thread_correlation_id_ = const_cast<CorrelationIdManager*>(this)->generateCorrelationId();
     }
@@ -26,7 +24,6 @@ std::string CorrelationIdManager::getCorrelationId() const {
 }
 
 void CorrelationIdManager::clearCorrelationId() {
-    std::lock_guard<std::mutex> lock(mutex_);
     thread_correlation_id_.clear();
 }
 

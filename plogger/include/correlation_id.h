@@ -2,8 +2,6 @@
 
 #include <string>
 #include <thread>
-#include <unordered_map>
-#include <mutex>
 
 namespace gis {
 
@@ -19,7 +17,6 @@ public:
 
 private:
     CorrelationIdManager() = default;
-    mutable std::mutex mutex_;
     thread_local static std::string thread_correlation_id_;
 };
 
