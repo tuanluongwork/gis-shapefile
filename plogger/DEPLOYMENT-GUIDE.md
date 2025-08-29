@@ -20,7 +20,7 @@ newgrp docker  # or logout and login again
 
 ### 2. Deploy ELK Stack
 ```bash
-cd /home/tuanla/data/gis-shapefile-main/logging-solution
+cd /home/tuanla/data/gis-shapefile-main/plogger
 docker compose up -d
 ```
 

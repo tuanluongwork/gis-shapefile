@@ -9,7 +9,7 @@ The enterprise logging solution has been moved to a separate directory for bette
 All logging-related implementations are now located in:
 
 ```
-logging-solution/
+plogger/
 ```
 
 ## What's Included
@@ -29,7 +29,7 @@ The logging solution contains a complete Phase 1: Foundation implementation of e
 
 ### 📁 **Directory Structure**
 ```
-logging-solution/
+plogger/
 ├── README.md                     # Getting started guide
 ├── README-Logging.md             # Detailed implementation docs
 ├── docker-compose.yml            # ELK stack orchestration
@@ -46,7 +46,7 @@ logging-solution/
 ### 1. Deploy the Logging Infrastructure
 
 ```bash
-cd logging-solution
+cd plogger
 ./deploy-logging.sh
 ```
 
@@ -58,7 +58,7 @@ cd logging-solution
 
 ### 3. Integration with Applications
 
-See `logging-solution/README.md` for detailed integration instructions.
+See `plogger/README.md` for detailed integration instructions.
 
 ## Why Separate?
 
@@ -110,7 +110,7 @@ make run      # Run the server
 
 ### For Enterprise Logging
 ```bash
-cd logging-solution
+cd plogger
 ./deploy-logging.sh    # Deploy ELK stack
 # Then integrate as needed per README.md
 ```

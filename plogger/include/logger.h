@@ -16,7 +16,7 @@ public:
     static Logger& getInstance();
     
     // Initialize with YAML configuration file
-    void initialize(const std::string& config_file = "logging-solution/config/logging.yaml");
+    void initialize(const std::string& config_file = "plogger/config/logging.yaml");
     
     // Legacy initialization method (for backward compatibility)
     void initialize(const std::string& log_level, 

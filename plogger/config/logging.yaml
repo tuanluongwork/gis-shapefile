@@ -8,7 +8,7 @@ logging:
   # Component-specific loggers
   loggers:
     GeocodingAPI:
-      level: "info"
+      level: "debug"
     HttpServer:
       level: "info"
     ShapefileReader:

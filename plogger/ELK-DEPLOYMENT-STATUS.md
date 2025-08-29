@@ -107,7 +107,7 @@ This is what would be indexed in Elasticsearch:
 ### **To Deploy (requires Docker access):**
 
 ```bash
-cd /home/tuanla/data/gis-shapefile-main/logging-solution
+cd /home/tuanla/data/gis-shapefile-main/plogger
 
 # Start ELK stack
 docker compose up -d

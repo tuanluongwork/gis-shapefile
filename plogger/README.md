@@ -5,7 +5,7 @@ This directory contains the complete Phase 1: Foundation implementation of the e
 ## Directory Structure
 
 ```
-logging-solution/
+plogger/
 ├── README.md                     # This file
 ├── README-Logging.md             # Detailed implementation guide
 ├── docker-compose.yml            # ELK stack orchestration
@@ -32,7 +32,7 @@ logging-solution/
 ### 1. Deploy the Logging Infrastructure
 
 ```bash
-cd logging-solution
+cd plogger
 chmod +x deploy-logging.sh
 ./deploy-logging.sh
 ```
@@ -43,12 +43,12 @@ To integrate this logging solution with your GIS application:
 
 1. **Copy headers to your include path**:
    ```bash
-   cp -r logging-solution/include/gis/* /path/to/your/project/include/gis/
+   cp -r plogger/include/gis/* /path/to/your/project/include/gis/
    ```
 
 2. **Copy source files to your source path**:
    ```bash
-   cp -r logging-solution/src/logging /path/to/your/project/src/
+   cp -r plogger/src/logging /path/to/your/project/src/
    ```
 
 3. **Update your CMakeLists.txt**:
