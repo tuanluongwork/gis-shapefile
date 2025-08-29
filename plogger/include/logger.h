@@ -26,8 +26,6 @@ public:
     
     std::shared_ptr<spdlog::logger> getLogger(const std::string& name = "default");
     
-    void setCorrelationId(const std::string& correlation_id);
-    std::string getCorrelationId() const;
     
     void logWithContext(spdlog::level::level_enum level,
                        const std::string& logger_name,
@@ -38,7 +36,6 @@ public:
 private:
     Logger() = default;
     bool initialized_ = false;
-    std::string correlation_id_;
     std::unordered_map<std::string, std::shared_ptr<spdlog::logger>> loggers_;
     YAML::Node config_;
     

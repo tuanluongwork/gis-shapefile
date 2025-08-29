@@ -19,6 +19,8 @@ logging:
       level: "warn"
     PolylineGeometry:
       level: "debug"
+    BoundingBox:
+      level: "debug"
       
   # Performance monitoring settings
   performance:

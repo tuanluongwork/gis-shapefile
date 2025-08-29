@@ -1,4 +1,5 @@
 #include "logger.h"
+#include "correlation_id.h"
 #include <spdlog/pattern_formatter.h>
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
@@ -161,33 +162,6 @@ std::shared_ptr<spdlog::logger> Logger::getLogger(const std::string& name) {
     return loggers_[name];
 }
 
-void Logger::setCorrelationId(const std::string& correlation_id) {
-    correlation_id_ = correlation_id;
-}
-
-std::string Logger::getCorrelationId() const {
-    if (correlation_id_.empty()) {
-        // Generate a simple UUID-like correlation ID
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis(0, 15);
-        
-        std::stringstream ss;
-        ss << std::hex;
-        for (int i = 0; i < 8; i++) ss << dis(gen);
-        ss << "-";
-        for (int i = 0; i < 4; i++) ss << dis(gen);
-        ss << "-4"; // Version 4 UUID
-        for (int i = 0; i < 3; i++) ss << dis(gen);
-        ss << "-";
-        for (int i = 0; i < 4; i++) ss << dis(gen);
-        ss << "-";
-        for (int i = 0; i < 12; i++) ss << dis(gen);
-        
-        return ss.str();
-    }
-    return correlation_id_;
-}
 
 void Logger::logWithContext(spdlog::level::level_enum level,
                            const std::string& logger_name,
@@ -209,7 +183,7 @@ std::string Logger::formatStructuredMessage(const std::string& message,
         ss << " | ";
         
         // Add correlation ID
-        ss << "correlation_id:" << getCorrelationId();
+        ss << "correlation_id:" << CorrelationIdManager::getInstance().getCorrelationId();
         
         // Add context fields
         for (const auto& [key, value] : context) {
