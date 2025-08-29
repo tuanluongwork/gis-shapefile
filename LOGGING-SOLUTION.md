@@ -32,13 +32,14 @@ The logging solution contains a complete Phase 1: Foundation implementation of e
 plogger/
 ├── README.md                     # Getting started guide
 ├── README-Logging.md             # Detailed implementation docs
-├── docker-compose.yml            # ELK stack orchestration
-├── deploy-logging.sh             # One-command deployment
-├── include/gis/                  # C++ logging headers
-├── src/logging/                  # C++ logging implementation
+├── include/                      # C++ logging headers
+├── src/                          # C++ logging implementation
 ├── config/                       # Application logging config
-├── elk-config/                   # ELK infrastructure config
-└── kibana-dashboards/           # Pre-built monitoring dashboards
+└── elk-infrastructure/           # ELK stack deployment
+    ├── docker-compose.yml        # ELK stack orchestration
+    ├── deploy-logging.sh         # One-command deployment
+    ├── elk-config/               # ELK infrastructure config
+    └── kibana-dashboards/        # Pre-built monitoring dashboards
 ```
 
 ## Quick Start
@@ -46,7 +47,7 @@ plogger/
 ### 1. Deploy the Logging Infrastructure
 
 ```bash
-cd plogger
+cd plogger/elk-infrastructure
 ./deploy-logging.sh
 ```
 
@@ -110,7 +111,7 @@ make run      # Run the server
 
 ### For Enterprise Logging
 ```bash
-cd plogger
+cd plogger/elk-infrastructure
 ./deploy-logging.sh    # Deploy ELK stack
 # Then integrate as needed per README.md
 ```
