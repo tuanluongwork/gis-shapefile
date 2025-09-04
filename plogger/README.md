@@ -1,6 +1,6 @@
-# Enterprise Logging Solution for GIS Geocoding API
+# Logging Solution for GIS Geocoding API
 
-This directory contains the complete Phase 1: Foundation implementation of the enterprise logging architecture as specified in `../logging-implementation.md`.
+This directory contains the core logging implementation for structured logging as specified in `../logging-implementation.md`.
 
 ## Directory Structure
 
@@ -14,42 +14,24 @@ plogger/
 ├── src/                          # C++ logging implementation
 │   ├── logger.cpp                # Logger implementation
 │   └── correlation_id.cpp        # Correlation ID implementation
-├── config/                       # Application logging configuration
-│   └── logging.yaml              # Logging settings
-└── elk-infrastructure/           # ELK stack deployment
-    ├── docker-compose.yml        # ELK stack orchestration
-    ├── deploy-logging.sh         # Deployment script
-    ├── elk-config/               # ELK stack configuration
-    │   ├── elasticsearch/        # Elasticsearch settings
-    │   ├── logstash/             # Log processing pipeline
-    │   ├── kibana/               # Visualization platform
-    │   └── filebeat/             # Log shipping agent
-    └── kibana-dashboards/        # Pre-built monitoring dashboards
-        └── gis-monitoring-dashboard.json
+└── config/                       # Application logging configuration
+    └── logging.yaml              # Logging settings
 ```
 
 ## Quick Start
 
-### 1. Deploy the Logging Infrastructure
+### 1. Integration with Existing Application
 
-```bash
-cd plogger/elk-infrastructure
-chmod +x deploy-logging.sh
-./deploy-logging.sh
-```
-
-### 2. Integration with Existing Application
-
-To integrate this logging solution with your GIS application:
+To integrate this logging solution with your application:
 
 1. **Copy headers to your include path**:
    ```bash
-   cp -r plogger/include/gis/* /path/to/your/project/include/gis/
+   cp -r plogger/include/* /path/to/your/project/include/
    ```
 
 2. **Copy source files to your source path**:
    ```bash
-   cp -r plogger/src/logging /path/to/your/project/src/
+   cp -r plogger/src/* /path/to/your/project/src/
    ```
 
 3. **Update your CMakeLists.txt**:
@@ -68,8 +50,8 @@ To integrate this logging solution with your GIS application:
    
    # Add logging sources to your target
    target_sources(your-target PRIVATE
-       src/logging/logger.cpp
-       src/logging/correlation_id.cpp
+       src/logger.cpp
+       src/correlation_id.cpp
    )
    
    # Link spdlog
@@ -78,12 +60,12 @@ To integrate this logging solution with your GIS application:
 
 4. **Initialize logging in your application**:
    ```cpp
-   #include "gis/logger.h"
-   #include "gis/correlation_id.h"
+   #include "logger.h"
+   #include "correlation_id.h"
    
    int main() {
        // Initialize logging
-       gis::Logger::getInstance().initialize("info", "logs/your-app.log");
+       Logger::getInstance().initialize("info", "logs/your-app.log");
        
        // Your application code here
        LOG_INFO("Main", "Application started", {{"version", "1.0.0"}});
@@ -92,7 +74,7 @@ To integrate this logging solution with your GIS application:
    }
    ```
 
-### 3. Using the Logging System
+### 2. Using the Logging System
 
 ```cpp
 // Basic logging
@@ -109,7 +91,7 @@ LOG_INFO("DatabaseQuery", "Query executed",
 
 // Correlation ID scoping
 {
-    gis::CorrelationIdScope scope("request-123-456");
+    CorrelationIdScope scope("request-123-456");
     // All logs in this scope will include the correlation ID
     LOG_INFO("RequestHandler", "Processing user request");
 }
@@ -117,7 +99,7 @@ LOG_INFO("DatabaseQuery", "Query executed",
 
 ## Features Implemented
 
-### ✅ Phase 1: Foundation Complete
+### ✅ Core Logging Components
 
 1. **Standardized Logging Framework**
    - spdlog integration with JSON output
@@ -133,25 +115,6 @@ LOG_INFO("DatabaseQuery", "Query executed",
    - JSON format with required fields
    - Context and performance metadata
    - Automatic field enrichment
-
-4. **ELK Stack Infrastructure**
-   - Elasticsearch for storage and indexing
-   - Logstash for processing and enrichment
-   - Kibana for visualization and monitoring
-   - Filebeat for reliable log shipping
-
-5. **Basic Monitoring Dashboards**
-   - System overview dashboard
-   - Performance monitoring
-   - Error tracking and alerting
-
-## Access Points
-
-Once deployed, the logging infrastructure provides:
-
-- **Kibana Dashboard**: http://localhost:5601
-- **Elasticsearch API**: http://localhost:9200
-- **Logstash API**: http://localhost:9600
 
 ## Configuration
 
@@ -172,54 +135,25 @@ Once deployed, the logging infrastructure provides:
 
 ### Common Issues
 
-1. **Docker containers won't start**:
-   ```bash
-   docker-compose down
-   docker system prune -f
-   docker-compose up -d
-   ```
-
-2. **Logs not appearing in Kibana**:
-   - Check Filebeat configuration
-   - Verify log file permissions
-   - Ensure Logstash pipeline is running
-
-3. **Build integration issues**:
+1. **Build integration issues**:
    - Verify spdlog is properly linked
    - Check include paths
    - Ensure C++17 compiler support
 
-### Useful Commands
+2. **Log file permissions**:
+   - Ensure write permissions to log directory
+   - Check disk space availability
 
-```bash
-# View service status
-docker-compose ps
-
-# View service logs
-docker-compose logs -f elasticsearch
-docker-compose logs -f logstash
-docker-compose logs -f kibana
-
-# Test Elasticsearch
-curl http://localhost:9200/_cluster/health
-
-# Test Kibana
-curl http://localhost:5601/api/status
-
-# Restart services
-docker-compose restart
-
-# Stop services
-docker-compose down
-```
+3. **Configuration issues**:
+   - Verify YAML configuration syntax
+   - Check log level settings
 
 ## Next Steps
 
-This Phase 1 implementation provides the foundation for Phase 2 enhancements:
-- Real-time Slack alerting
+This implementation provides the foundation for future enhancements:
 - Advanced performance monitoring  
 - PII masking implementation
 - Automated retention policies
-- ML-based anomaly detection
+- Integration with external log aggregation systems
 
 For detailed implementation information, see `README-Logging.md`.

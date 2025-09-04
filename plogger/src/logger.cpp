@@ -2,6 +2,7 @@
 #include "correlation_id.h"
 #include <spdlog/pattern_formatter.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/sinks/daily_file_sink.h>
 #include <yaml-cpp/yaml.h>
 #include <chrono>
 #include <random>
@@ -12,6 +13,101 @@
 #include <fstream>
 
 namespace gis {
+
+// Custom sink that combines daily rotation with size limits
+class hybrid_file_sink : public spdlog::sinks::base_sink<std::mutex> {
+private:
+    std::string base_filename_;
+    std::string current_filename_;
+    std::FILE* file_;
+    size_t max_size_;
+    size_t current_size_;
+    int file_counter_;
+    std::tm last_date_;
+    
+    void rotate_if_needed() {
+        auto now = std::time(nullptr);
+        auto tm_now = *std::localtime(&now);
+        
+        bool day_changed = (tm_now.tm_year != last_date_.tm_year ||
+                           tm_now.tm_mon != last_date_.tm_mon ||
+                           tm_now.tm_mday != last_date_.tm_mday);
+        
+        // Always create file if we don't have one yet
+        bool need_new_file = (!file_) || day_changed || (current_size_ >= max_size_);
+        
+        if (need_new_file) {
+            if (file_) {
+                std::fclose(file_);
+                file_ = nullptr;
+            }
+            
+            if (day_changed) {
+                file_counter_ = 0;
+                last_date_ = tm_now;
+            } else {
+                file_counter_++;
+            }
+            
+            // Create new filename with date and counter
+            std::ostringstream oss;
+            oss << base_filename_ << "."
+                << std::put_time(&tm_now, "%Y-%m-%d");
+            if (file_counter_ > 0) {
+                oss << "." << file_counter_;
+            }
+            current_filename_ = oss.str();
+            
+            file_ = std::fopen(current_filename_.c_str(), "a");
+            if (!file_) {
+                throw spdlog::spdlog_ex("Failed to open " + current_filename_ + " for writing");
+            }
+            current_size_ = std::ftell(file_);
+        }
+    }
+
+public:
+    hybrid_file_sink(const std::string& base_filename, size_t max_size)
+        : base_filename_(base_filename), file_(nullptr), max_size_(max_size), 
+          current_size_(0), file_counter_(0) {
+        auto now = std::time(nullptr);
+        last_date_ = *std::localtime(&now);
+        
+        // Create directory if it doesn't exist
+        std::filesystem::path file_path(base_filename_);
+        if (file_path.has_parent_path()) {
+            std::filesystem::create_directories(file_path.parent_path());
+        }
+        
+        rotate_if_needed();
+    }
+    
+    ~hybrid_file_sink() {
+        if (file_) {
+            std::fclose(file_);
+        }
+    }
+
+protected:
+    void sink_it_(const spdlog::details::log_msg& msg) override {
+        rotate_if_needed();
+        
+        if (file_) {
+            spdlog::memory_buf_t formatted;
+            formatter_->format(msg, formatted);
+            std::fwrite(formatted.data(), 1, formatted.size(), file_);
+            std::fflush(file_);
+            current_size_ += formatted.size();
+        }
+    }
+
+    void flush_() override {
+        if (file_) {
+            std::fflush(file_);
+        }
+    }
+};
+
 
 Logger& Logger::getInstance() {
     static Logger instance;
@@ -31,7 +127,7 @@ void Logger::initialize(const std::string& config_file) {
         std::string log_level = logging_config["level"].as<std::string>("info");
         std::string log_file = logging_config["file"].as<std::string>("logs/gis-server.log");
         size_t max_file_size = logging_config["max_file_size"].as<size_t>(5 * 1024 * 1024);
-        size_t max_files = logging_config["max_files"].as<size_t>(3);
+        // size_t max_files = logging_config["max_files"].as<size_t>(3);
         std::string pattern = logging_config["pattern"].as<std::string>(
             R"({"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%l","logger":"%n","message":"%v"})");
         
@@ -39,8 +135,7 @@ void Logger::initialize(const std::string& config_file) {
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         console_sink->set_level(spdlog::level::info);
         
-        auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-            log_file, max_file_size, max_files);
+        auto file_sink = std::make_shared<hybrid_file_sink>(log_file, max_file_size);
         file_sink->set_level(spdlog::level::trace);
         
         // Create default logger with both sinks
@@ -76,7 +171,7 @@ void Logger::initialize(const std::string& config_file) {
 void Logger::initialize(const std::string& log_level, 
                        const std::string& log_file,
                        size_t max_file_size,
-                       size_t max_files) {
+                       size_t /* max_files */) {
     if (initialized_) {
         return;
     }
@@ -86,9 +181,8 @@ void Logger::initialize(const std::string& log_level,
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         console_sink->set_level(spdlog::level::info);
         
-        // Create file sink with rotation
-        auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-            log_file, max_file_size, max_files);
+        // Create file sink with daily rotation
+        auto file_sink = std::make_shared<hybrid_file_sink>(log_file, max_file_size);
         file_sink->set_level(spdlog::level::trace);
         
         // Create default logger with both sinks
