@@ -2,6 +2,7 @@
 #include "correlation_id.h"
 #include <spdlog/pattern_formatter.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/async.h>
 #include <spdlog/sinks/daily_file_sink.h>
 #include <yaml-cpp/yaml.h>
 #include <chrono>
@@ -14,8 +15,8 @@
 
 namespace gis {
 
-// Custom sink that combines daily rotation with size limits
-class hybrid_file_sink : public spdlog::sinks::base_sink<std::mutex> {
+// Thread-safe async sink that combines daily rotation with size limits
+class async_hybrid_file_sink : public spdlog::sinks::base_sink<std::mutex> {
 private:
     std::string base_filename_;
     std::string current_filename_;
@@ -67,7 +68,7 @@ private:
     }
 
 public:
-    hybrid_file_sink(const std::string& base_filename, size_t max_size)
+    async_hybrid_file_sink(const std::string& base_filename, size_t max_size)
         : base_filename_(base_filename), file_(nullptr), max_size_(max_size), 
           current_size_(0), file_counter_(0) {
         auto now = std::time(nullptr);
@@ -82,7 +83,7 @@ public:
         rotate_if_needed();
     }
     
-    ~hybrid_file_sink() {
+    ~async_hybrid_file_sink() {
         if (file_) {
             std::fclose(file_);
         }
@@ -96,7 +97,7 @@ protected:
             spdlog::memory_buf_t formatted;
             formatter_->format(msg, formatted);
             std::fwrite(formatted.data(), 1, formatted.size(), file_);
-            std::fflush(file_);
+            // Remove explicit flush for async performance - let spdlog handle it
             current_size_ += formatted.size();
         }
     }
@@ -127,30 +128,29 @@ void Logger::initialize(const std::string& config_file) {
         std::string log_level = logging_config["level"].as<std::string>("info");
         std::string log_file = logging_config["file"].as<std::string>("logs/gis-server.log");
         size_t max_file_size = logging_config["max_file_size"].as<size_t>(5 * 1024 * 1024);
-        // size_t max_files = logging_config["max_files"].as<size_t>(3);
         std::string pattern = logging_config["pattern"].as<std::string>(
             R"({"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%l","logger":"%n","message":"%v"})");
+        
+        // Initialize async thread pool (queue size: 8192, thread count: 1)
+        spdlog::init_thread_pool(8192, 1);
         
         // Create sinks
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         console_sink->set_level(spdlog::level::info);
         
-        auto file_sink = std::make_shared<hybrid_file_sink>(log_file, max_file_size);
+        auto file_sink = std::make_shared<async_hybrid_file_sink>(log_file, max_file_size);
         file_sink->set_level(spdlog::level::trace);
         
-        // Create default logger with both sinks
+        // Create async default logger with both sinks
         std::vector<spdlog::sink_ptr> sinks{console_sink, file_sink};
-        auto default_logger = std::make_shared<spdlog::logger>("default", sinks.begin(), sinks.end());
+        auto default_logger = std::make_shared<spdlog::async_logger>("default", sinks.begin(), sinks.end(), 
+                                                                     spdlog::thread_pool(), spdlog::async_overflow_policy::block);
         
         // Set pattern from config
         default_logger->set_pattern(pattern);
         
         // Set log level from config
         default_logger->set_level(parseLogLevel(log_level));
-        
-        // Enable automatic flushing
-        default_logger->flush_on(spdlog::level::info);
-        spdlog::flush_every(std::chrono::seconds(1));
         
         spdlog::register_logger(default_logger);
         spdlog::set_default_logger(default_logger);
@@ -159,7 +159,7 @@ void Logger::initialize(const std::string& config_file) {
         initialized_ = true;
         
         // Log initialization success
-        default_logger->info("Logger initialized successfully from config: {}", config_file);
+        default_logger->info("Async logger initialized successfully from config: {}", config_file);
         
     } catch (const std::exception& ex) {
         std::cerr << "Logger initialization failed: " << ex.what() << std::endl;
@@ -177,48 +177,36 @@ void Logger::initialize(const std::string& log_level,
     }
     
     try {
+        // Initialize async thread pool (queue size: 8192, thread count: 1)
+        spdlog::init_thread_pool(8192, 1);
+        
         // Create console sink
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         console_sink->set_level(spdlog::level::info);
         
         // Create file sink with daily rotation
-        auto file_sink = std::make_shared<hybrid_file_sink>(log_file, max_file_size);
+        auto file_sink = std::make_shared<async_hybrid_file_sink>(log_file, max_file_size);
         file_sink->set_level(spdlog::level::trace);
         
-        // Create default logger with both sinks
+        // Create async default logger with both sinks
         std::vector<spdlog::sink_ptr> sinks{console_sink, file_sink};
-        auto default_logger = std::make_shared<spdlog::logger>("default", sinks.begin(), sinks.end());
+        auto default_logger = std::make_shared<spdlog::async_logger>("default", sinks.begin(), sinks.end(), 
+                                                                     spdlog::thread_pool(), spdlog::async_overflow_policy::block);
         
         // Set JSON-like pattern for structured logging
         default_logger->set_pattern(R"({"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%l","logger":"%n","message":"%v"})");
         
         // Set log level
-        if (log_level == "trace") {
-            default_logger->set_level(spdlog::level::trace);
-        } else if (log_level == "debug") {
-            default_logger->set_level(spdlog::level::debug);
-        } else if (log_level == "info") {
-            default_logger->set_level(spdlog::level::info);
-        } else if (log_level == "warn") {
-            default_logger->set_level(spdlog::level::warn);
-        } else if (log_level == "error") {
-            default_logger->set_level(spdlog::level::err);
-        } else if (log_level == "critical") {
-            default_logger->set_level(spdlog::level::critical);
-        }
+        default_logger->set_level(parseLogLevel(log_level));
         
         spdlog::register_logger(default_logger);
         spdlog::set_default_logger(default_logger);
-        
-        // Enable automatic flushing to ensure logs are written to file immediately
-        default_logger->flush_on(spdlog::level::info);
-        spdlog::flush_every(std::chrono::seconds(1));
         
         loggers_["default"] = default_logger;
         initialized_ = true;
         
         // Log initialization success
-        default_logger->info("Logger initialized successfully");
+        default_logger->info("Async logger initialized successfully");
         
     } catch (const spdlog::spdlog_ex& ex) {
         std::cerr << "Logger initialization failed: " << ex.what() << std::endl;
@@ -231,9 +219,10 @@ std::shared_ptr<spdlog::logger> Logger::getLogger(const std::string& name) {
     }
     
     if (loggers_.find(name) == loggers_.end()) {
-        // Create new logger with same sinks as default
+        // Create new async logger with same sinks as default
         auto default_logger = loggers_["default"];
-        auto new_logger = std::make_shared<spdlog::logger>(name, default_logger->sinks().begin(), default_logger->sinks().end());
+        auto new_logger = std::make_shared<spdlog::async_logger>(name, default_logger->sinks().begin(), default_logger->sinks().end(),
+                                                                 spdlog::thread_pool(), spdlog::async_overflow_policy::block);
         
         // Check for component-specific configuration
         if (config_["logging"]["loggers"] && config_["logging"]["loggers"][name]) {
@@ -247,7 +236,6 @@ std::shared_ptr<spdlog::logger> Logger::getLogger(const std::string& name) {
         std::string pattern = config_["logging"]["pattern"].as<std::string>(
             R"({"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%l","logger":"%n","message":"%v"})");
         new_logger->set_pattern(pattern);
-        new_logger->flush_on(spdlog::level::info);
         
         spdlog::register_logger(new_logger);
         loggers_[name] = new_logger;
@@ -315,6 +303,15 @@ spdlog::level::level_enum Logger::parseLogLevel(const std::string& level_str) {
     
     // Default to info if unknown
     return spdlog::level::info;
+}
+
+void Logger::shutdown() {
+    if (initialized_) {
+        // Flush all async loggers and shutdown the thread pool
+        spdlog::shutdown();
+        initialized_ = false;
+        loggers_.clear();
+    }
 }
 
 } // namespace gis

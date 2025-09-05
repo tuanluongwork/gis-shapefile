@@ -1,6 +1,7 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
+#include <spdlog/async.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/fmt/ostr.h>
@@ -26,6 +27,8 @@ public:
     
     std::shared_ptr<spdlog::logger> getLogger(const std::string& name = "default");
     
+    // Shutdown async logging - must be called before program exit
+    void shutdown();
     
     void logWithContext(spdlog::level::level_enum level,
                        const std::string& logger_name,
