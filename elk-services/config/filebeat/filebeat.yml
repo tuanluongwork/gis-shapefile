@@ -14,17 +14,13 @@ filebeat.inputs:
   json.keys_under_root: ${JSON_KEYS_UNDER_ROOT:true}
   json.add_error_key: true
 
-# Output directly to Elasticsearch
-output.elasticsearch:
-  hosts: ["elasticsearch:9200"]
-  index: "gis-logs-%{+yyyy.MM.dd}"
+# Output to Logstash
+output.logstash:
+  hosts: ["logstash:5044"]
 
-# Setup template
-setup.template.name: "gis-logs"
-setup.template.pattern: "gis-logs-*"
-setup.template.settings:
-  index.number_of_shards: 1
-  index.number_of_replicas: 0
+# Template setup disabled - handled by Logstash
+setup.template.enabled: false
+setup.ilm.enabled: false
 
 # Logging configuration
 logging.level: info
