@@ -35,7 +35,6 @@ services:
     container_name: ${APPLICATION_NAME:-myapp}-logstash
     volumes:
       - ./config/logstash/pipeline:/usr/share/logstash/pipeline:ro
-      - ${LOG_SOURCE_PATH:-../logs}:/usr/share/logstash/logs:ro
     ports:
       - "${LOGSTASH_BEATS_PORT:-5044}:5044"
       - "5000:5000/tcp"
