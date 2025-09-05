@@ -85,6 +85,21 @@ if(WIN32)
     target_link_libraries(gis-server ws2_32)
 endif()
 
+
+
+
+
+
+# Create logs directory
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/logs)
+
+# Copy config file to build directory
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/plogger/config/logging.yaml
+    ${CMAKE_BINARY_DIR}/plogger/config/logging.yaml
+    COPYONLY
+)
+
 # Installation
 install(TARGETS gis-core gis-server
     RUNTIME DESTINATION bin
