@@ -22,9 +22,3 @@ logging:
     BoundingBox:
       level: "debug"
       
-  # Performance monitoring settings
-  performance:
-    log_slow_queries: true
-    slow_query_threshold_ms: 1000
-    log_memory_usage: true
-    memory_check_interval_ms: 30000
