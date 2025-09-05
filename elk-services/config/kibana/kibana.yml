@@ -1,0 +1,35 @@
+server.name: "kibana"
+server.host: "0.0.0.0"
+server.port: 5601
+
+# Elasticsearch settings
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+elasticsearch.requestTimeout: 60000
+elasticsearch.shardTimeout: 30000
+
+# Security settings (disabled for development)
+xpack.security.enabled: false
+xpack.encryptedSavedObjects.encryptionKey: "something_at_least_32_characters_long_for_encryption"
+
+# Monitoring settings
+monitoring.ui.container.elasticsearch.enabled: true
+
+# Logging settings
+logging.appenders.default:
+  type: console
+  layout:
+    type: json
+
+logging.root:
+  level: info
+  appenders: [default]
+
+# UI settings
+# server.basePath: ""
+server.rewriteBasePath: false
+
+# Performance settings
+server.maxPayload: 1048576
+
+# Development settings
+server.cors.enabled: false
