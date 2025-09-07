@@ -1,20 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(*)",
-      "Edit(*)",
-      "Write(*)",
-      "WebFetch(*)",
-      "WebSearch(*)",
-      "MultiEdit(*)",
-      "NotebookEdit(*)",
-      "NotebookRead(*)",
-      "Read(*)",
-      "Glob(*)",
-      "Grep(*)",
-      "LS(*)",
-      "Task(*)",
-      "TodoWrite(*)"
+      "Bash(docker-compose:*)",
+      "Bash(curl:*)",
+      "Bash(sudo chown:*)",
+      "Bash(sudo chmod:*)",
+      "Bash(docker logs:*)",
+      "Bash(sudo cp:*)",
+      "Bash(sudo rm:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker volume rm:*)",
+      "Bash(docker volume:*)"
     ],
     "deny": [],
     "ask": [],

@@ -21,7 +21,7 @@ A flexible and configurable ELK (Elasticsearch, Logstash, Kibana) stack with Fil
 
 1. **Choose a configuration template:**
    ```bash
-   # For JSON logs (like plogger)
+   # For JSON logs (like log-services)
    cp .env.example .env
    
    # For simple text logs
