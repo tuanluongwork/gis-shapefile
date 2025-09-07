@@ -34,8 +34,9 @@ private:
                            tm_now.tm_mon != last_date_.tm_mon ||
                            tm_now.tm_mday != last_date_.tm_mday);
         
-        // Always create file if we don't have one yet
-        bool need_new_file = (!file_) || day_changed || (current_size_ >= max_size_);
+        // Check reasons for rotation
+        bool size_exceeded = current_size_ >= max_size_;
+        bool need_new_file = (!file_) || day_changed || size_exceeded;
         
         if (need_new_file) {
             if (file_) {
@@ -46,7 +47,7 @@ private:
             if (day_changed) {
                 file_counter_ = 0;
                 last_date_ = tm_now;
-            } else {
+            } else if (size_exceeded) {
                 file_counter_++;
             }
             
