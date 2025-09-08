@@ -1,20 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(*)",
-      "Edit(*)",
-      "Write(*)",
-      "WebFetch(*)",
-      "WebSearch(*)",
-      "MultiEdit(*)",
-      "NotebookEdit(*)",
-      "NotebookRead(*)",
-      "Read(*)",
-      "Glob(*)",
-      "Grep(*)",
-      "LS(*)",
-      "Task(*)",
-      "TodoWrite(*)"
+      "Bash(netstat:*)",
+      "Bash(systemctl list-units:*)",
+      "Bash(systemctl:*)",
+      "Read(//etc/fusioninventory/**)",
+      "Read(//usr/share/ca-certificates/**)",
+      "Read(//var/log/**)",
+      "Bash(journalctl:*)",
+      "Bash(crontab:*)",
+      "Bash(sudo crontab:*)"
     ],
     "deny": [],
     "ask": [],

@@ -76,5 +76,3 @@ external/
 .svn/
 .env
 data/
-build*/
-logs/
