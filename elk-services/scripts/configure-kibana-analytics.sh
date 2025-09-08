@@ -28,13 +28,13 @@ if [ "$DATA_COUNT" = "0" ] || [ "$DATA_COUNT" = "null" ]; then
     # Create sample data
     cat << 'EOF' > /tmp/sample_kibana_data.json
 {"index": {"_index": "pxp-logs-2025.09.08"}}
-{"@timestamp": "2025-09-08T14:30:15.123Z", "level": "info", "logger": "pxpoint.service.main", "message": "Application started successfully", "correlation_id": "app-001", "component": "main", "status": "active", "application": "pxpoint", "log_type": "gis_application", "log_source": "filebeat"}
+{"@timestamp": "2025-09-08T14:30:15.123Z", "level": "info", "logger": "pxpoint.service.main", "message": "Application started successfully", "correlation_id": "app-001", "component": "main", "status": "active", "application": "pxpoint", "log_type": "application", "log_source": "filebeat"}
 {"index": {"_index": "pxp-logs-2025.09.08"}}
-{"@timestamp": "2025-09-08T14:30:16.234Z", "level": "info", "logger": "pxpoint.gis.processor", "message": "Processing shapefile data", "correlation_id": "gis-002", "component": "processor", "operation": "shapefile_processing", "status": "processing", "application": "pxpoint", "log_type": "gis_application", "log_source": "filebeat"}
+{"@timestamp": "2025-09-08T14:30:16.234Z", "level": "info", "logger": "pxpoint.gis.processor", "message": "Processing shapefile data", "correlation_id": "gis-002", "component": "processor", "operation": "shapefile_processing", "status": "processing", "application": "pxpoint", "log_type": "application", "log_source": "filebeat"}
 {"index": {"_index": "pxp-logs-2025.09.08"}}
-{"@timestamp": "2025-09-08T14:30:17.345Z", "level": "warn", "logger": "pxpoint.database.connection", "message": "Database connection slow", "correlation_id": "db-003", "component": "database", "response_time_ms": 850, "threshold_ms": 500, "status": "warning", "application": "pxpoint", "log_type": "gis_application", "log_source": "filebeat"}
+{"@timestamp": "2025-09-08T14:30:17.345Z", "level": "warn", "logger": "pxpoint.database.connection", "message": "Database connection slow", "correlation_id": "db-003", "component": "database", "response_time_ms": 850, "threshold_ms": 500, "status": "warning", "application": "pxpoint", "log_type": "application", "log_source": "filebeat"}
 {"index": {"_index": "pxp-logs-2025.09.08"}}
-{"@timestamp": "2025-09-08T14:30:18.456Z", "level": "error", "logger": "pxpoint.auth.service", "message": "Authentication failed", "correlation_id": "auth-004", "component": "auth", "user_id": "user123", "status": "failed", "error_code": "INVALID_CREDENTIALS", "application": "pxpoint", "log_type": "gis_application", "log_source": "filebeat"}
+{"@timestamp": "2025-09-08T14:30:18.456Z", "level": "error", "logger": "pxpoint.auth.service", "message": "Authentication failed", "correlation_id": "auth-004", "component": "auth", "user_id": "user123", "status": "failed", "error_code": "INVALID_CREDENTIALS", "application": "pxpoint", "log_type": "application", "log_source": "filebeat"}
 EOF
 
     curl -s -X POST "http://localhost:9200/_bulk" -H "Content-Type: application/x-ndjson" --data-binary @/tmp/sample_kibana_data.json > /dev/null
