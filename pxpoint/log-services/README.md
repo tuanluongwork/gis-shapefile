@@ -136,7 +136,7 @@ log-services/
 |-----------|------|---------|-------------|
 | `name` | string | "app" | Logger name |
 | `level` | string | "info" | Minimum log level |
-| `log_directory` | string | "/tmp/logs" | Base directory for log files |
+| `log_directory` | string | "/tmp/pxpoint-logs" | Base directory for log files |
 | `async_logging` | boolean | true | Enable asynchronous logging |
 | `async_queue_size` | number | 8192 | Async queue size |
 | `async_thread_count` | number | 1 | Number of async threads |

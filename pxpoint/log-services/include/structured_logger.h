@@ -59,7 +59,7 @@ struct LoggerConfig {
     spdlog::async_overflow_policy async_overflow_policy = spdlog::async_overflow_policy::block;
     
     // Output directory
-    std::string log_directory = "/tmp/logs";
+    std::string log_directory = "/tmp/pxpoint-logs";
     
     // Sinks configuration
     std::vector<SinkConfig> sinks;

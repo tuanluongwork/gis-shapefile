@@ -139,7 +139,7 @@ private:
         LOG_ACTIVITY_SCOPE("GenerateOutput");
         
         std::stringstream output_file;
-        output_file << "/tmp/logs/parcel_output_" << fips_code_ << ".pxy";
+        output_file << "/tmp/pxpoint-logs/parcel_output_" << fips_code_ << ".pxy";
         
         LOG_COMPONENT_INFO("OutputGeneration", "Generating PXY output file", 
             {{"output_file", output_file.str()},

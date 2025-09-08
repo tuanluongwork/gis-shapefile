@@ -23,7 +23,7 @@ echo "=== Running Integration Tests ==="
 
 # Create test log directories
 mkdir -p /tmp/pxpoint-logs
-mkdir -p /tmp/logs
+mkdir -p /tmp/pxpoint-logs
 
 echo ""
 echo "1. Testing basic functionality (backward compatibility)..."
@@ -94,10 +94,10 @@ else
     echo "❌ PxPoint logs not found"
 fi
 
-if [ -d "/tmp/logs" ] && [ "$(ls -A /tmp/logs)" ]; then
+if [ -d "/tmp/pxpoint-logs" ] && [ "$(ls -A /tmp/pxpoint-logs)" ]; then
     echo "✅ Generic logs created successfully"
-    echo "Log files in /tmp/logs:"
-    ls -la /tmp/logs/
+    echo "Log files in /tmp/pxpoint-logs:"
+    ls -la /tmp/pxpoint-logs/
 else
     echo "❌ Generic logs not found"
 fi
@@ -108,7 +108,7 @@ echo "Checking correlation consistency..."
 
 # Find a sample log file with correlation data
 LOG_FILE=""
-for file in /tmp/pxpoint-logs/*.log /tmp/logs/*.log; do
+for file in /tmp/pxpoint-logs/*.log /tmp/pxpoint-logs/*.log; do
     if [ -f "$file" ] && grep -q "pipeline" "$file" 2>/dev/null; then
         LOG_FILE="$file"
         break
@@ -145,9 +145,9 @@ echo ""
 echo "=== Performance Analysis ==="
 
 # Check async logging performance
-if grep -q "performance.*msg/sec" /tmp/logs/*.log 2>/dev/null; then
+if grep -q "performance.*msg/sec" /tmp/pxpoint-logs/*.log 2>/dev/null; then
     echo "✅ Performance measurements found in logs"
-    grep "performance.*msg/sec" /tmp/logs/*.log 2>/dev/null | head -n 3
+    grep "performance.*msg/sec" /tmp/pxpoint-logs/*.log 2>/dev/null | head -n 3
 else
     echo "⚠️  No performance measurements found"
 fi
@@ -168,7 +168,7 @@ if [ -d "/tmp/pxpoint-logs" ] && [ "$(ls -A /tmp/pxpoint-logs)" ]; then
     ((PASSED_TESTS++))
 fi
 
-if [ -d "/tmp/logs" ] && [ "$(ls -A /tmp/logs)" ]; then
+if [ -d "/tmp/pxpoint-logs" ] && [ "$(ls -A /tmp/pxpoint-logs)" ]; then
     ((PASSED_TESTS++))
 fi
 
@@ -202,7 +202,7 @@ if [ "$PASSED_TESTS" -eq "$TOTAL_TESTS" ]; then
     echo "  • Modern C++ best practices"
     echo ""
     echo "Next steps:"
-    echo "  1. Review log output in /tmp/pxpoint-logs/ and /tmp/logs/"
+    echo "  1. Review log output in /tmp/pxpoint-logs/ and /tmp/pxpoint-logs/"
     echo "  2. Customize configuration files in log-services/config/"
     echo "  3. Explore examples in log-services/examples/"
     echo "  4. Read documentation in log-services/README.md"

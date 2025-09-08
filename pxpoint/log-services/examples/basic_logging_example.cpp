@@ -142,7 +142,7 @@ int main() {
         demonstrate_error_logging();
         
         std::cout << "\n=== Example completed successfully ===" << std::endl;
-        std::cout << "Check the log files in /tmp/logs/ for structured output" << std::endl;
+        std::cout << "Check the log files in /tmp/pxpoint-logs/ for structured output" << std::endl;
         
         // Ensure all logs are written before exit
         StructuredLogger::getInstance().flush();

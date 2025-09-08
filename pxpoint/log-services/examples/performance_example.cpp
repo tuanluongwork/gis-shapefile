@@ -30,7 +30,7 @@ void benchmark_logging_performance() {
         for (int i = 0; i < num_messages; ++i) {
             LOG_INFO("Benchmark message", {
                 {"message_id", std::to_string(i)},
-                {"thread_id", std::to_string(std::this_thread::get_id().hash())},
+                {"thread_id", std::to_string(std::hash<std::thread::id>{}(std::this_thread::get_id()))},
                 {"timestamp", std::to_string(std::chrono::system_clock::now().time_since_epoch().count())}
             });
         }
@@ -73,7 +73,7 @@ void benchmark_logging_performance() {
                     LOG_INFO("Multithreaded benchmark message", {
                         {"message_id", std::to_string(t * messages_per_thread + i)},
                         {"thread_id", std::to_string(t)},
-                        {"worker_id", std::to_string(std::this_thread::get_id().hash())}
+                        {"worker_id", std::to_string(std::hash<std::thread::id>{}(std::this_thread::get_id()))}
                     });
                 }
             });
@@ -225,6 +225,7 @@ void demonstrate_memory_usage() {
         memory_blocks.push_back(std::move(block));
         
         // Log memory allocation
+        auto& logger = StructuredLogger::getInstance();
         logger.logEvent("memory_allocated", "Allocated memory block", {
             {"block_id", std::to_string(i)},
             {"block_size_bytes", std::to_string(10000 * sizeof(int))},
