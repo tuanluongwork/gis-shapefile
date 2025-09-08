@@ -66,7 +66,7 @@ In the application's entry point (`main.cpp`), the logger is initialized once:
 #include "logger.h"
 
 int main() {
-    Logger::getInstance().initialize("info", "logs/gis-server.log");
+    Logger::getInstance().initialize("info", "logs/gis-app.log");
     LOG_INFO("Application", "Server starting up", {{"version", "1.2.0"}});
     // ...
     return 0;
@@ -112,7 +112,7 @@ Because the logger operates asynchronously, it is crucial to shut it down gracef
 #include "logger.h"
 
 int main() {
-    Logger::getInstance().initialize("info", "logs/gis-server.log");
+    Logger::getInstance().initialize("info", "logs/gis-app.log");
     // ... application logic ...
     LOG_INFO("Application", "Server shutting down.");
     Logger::getInstance().shutdown(); // Important: Flush all logs before exit

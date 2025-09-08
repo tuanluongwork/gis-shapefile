@@ -131,7 +131,7 @@ YAML-based hierarchical configuration
 
     logging:
       level: "info"                    # Global log level
-      file: "logs/gis-server.log"     # Output file path
+      file: "logs/gis-app.log"     # Output file path
       max_file_size: 5242880          # 5MB rotation size
       pattern: '{"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ",...}'  # JSON format
       

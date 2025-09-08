@@ -98,7 +98,7 @@ services:
       "
     volumes:
       - ./config/filebeat/filebeat.yml:/tmp/filebeat.yml:ro
-      - ${LOG_SOURCE_PATH:-../logs}:/usr/share/filebeat/inputlogs:ro
+      - ${LOG_SOURCE_PATH:-/tmp/pxpoint-logs}:/usr/share/filebeat/inputlogs:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - filebeat_data:/usr/share/filebeat/data
@@ -126,7 +126,7 @@ services:
     image: alpine:latest
     container_name: ${APPLICATION_NAME:-myapp}-log-generator
     volumes:
-      - ${LOG_SOURCE_PATH:-../logs}:/logs
+      - ${LOG_SOURCE_PATH:-/tmp/pxpoint-logs}:/logs
     networks:
       - elk-network
     profiles: ["testing"]

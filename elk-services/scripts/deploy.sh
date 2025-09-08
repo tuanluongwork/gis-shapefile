@@ -20,8 +20,19 @@ if ! command -v docker-compose &> /dev/null; then
     exit 1
 fi
 
-# Create logs directory if it doesn't exist
-mkdir -p "$PROJECT_DIR/logs"
+# Load environment variables
+if [ -f "$PROJECT_DIR/.env" ]; then
+    source "$PROJECT_DIR/.env"
+fi
+
+# Create log source directory if it doesn't exist and it's a local path
+if [[ "${LOG_SOURCE_PATH:-/tmp/pxpoint-logs}" =~ ^\.\/ ]] || [[ "${LOG_SOURCE_PATH:-/tmp/pxpoint-logs}" =~ ^[^/] ]]; then
+    # It's a relative path, create it relative to PROJECT_DIR
+    mkdir -p "$PROJECT_DIR/${LOG_SOURCE_PATH:-logs}"
+elif [[ "${LOG_SOURCE_PATH:-/tmp/pxpoint-logs}" =~ ^/ ]]; then
+    # It's an absolute path, create it directly
+    mkdir -p "${LOG_SOURCE_PATH:-/tmp/pxpoint-logs}"
+fi
 
 # Set proper permissions for Elasticsearch data directory
 echo "📁 Setting up directories and permissions..."
@@ -81,7 +92,7 @@ echo "   • Elasticsearch: http://localhost:9200"
 echo "   • Kibana:        http://localhost:5601"
 echo "   • Logstash:      http://localhost:9600"
 echo ""
-echo "📁 Log files should be placed in: $PROJECT_DIR/logs"
+echo "📁 Log files should be placed in: ${LOG_SOURCE_PATH:-/tmp/pxpoint-logs}"
 echo ""
 echo "🔧 To stop the services: ./scripts/stop.sh"
 echo "🔄 To restart the services: ./scripts/restart.sh"
