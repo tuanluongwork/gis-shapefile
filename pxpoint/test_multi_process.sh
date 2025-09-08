@@ -8,9 +8,9 @@ echo "Testing the new generic logging library with cross-process correlation"
 echo
 
 # Navigate to build directory
-BUILD_DIR="/home/tuanla/data/gis-shapefile-main/pxpoint/build"
+BUILD_DIR="$(pwd)/cpp/build"
 if [ ! -d "$BUILD_DIR" ]; then
-    echo "Build directory not found. Please run: mkdir build && cd build && cmake .. && make"
+    echo "Build directory not found. Please run: cd cpp && mkdir build && cd build && cmake .. && make"
     exit 1
 fi
 
@@ -37,7 +37,7 @@ echo "   This will create the pipeline correlation ID and spawn C++ workers"
 echo
 
 if command -v dotnet >/dev/null 2>&1; then
-    dotnet run --project ../DummyParcelBuilderNew.csproj --no-build --verbosity quiet
+    dotnet run --project ../../cs/DummyParcelBuilderNew.csproj --no-build --verbosity quiet
 else
     echo "   .NET not available, running C++ processes directly..."
     echo

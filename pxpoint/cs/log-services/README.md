@@ -34,7 +34,7 @@ This library provides structured logging with hierarchical correlation IDs for m
 ## Project Structure
 
 ```
-log-services-dotnet/
+log-services/
 ├── src/
 │   ├── CorrelationManager.cs      # Hierarchical correlation management
 │   └── StructuredLogger.cs        # High-performance async logging

@@ -8,7 +8,7 @@ set -e
 echo "=== PxPoint Logging Integration Test ==="
 
 # Create build directory
-BUILD_DIR="build-integration"
+BUILD_DIR="cpp/build-integration"
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
