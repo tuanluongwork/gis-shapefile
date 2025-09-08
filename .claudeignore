@@ -74,5 +74,4 @@ third_party/
 external/
 .git/
 .svn/
-.env
 data/
