@@ -1,0 +1,10 @@
+{
+  "pipelineIdPrefix": "pipeline",
+  "processIdPrefix": "proc",
+  "activityIdPrefix": "act",
+  "envVarPipeline": "LOG_PIPELINE_ID",
+  "envVarProcess": "LOG_PROCESS_ID",
+  "autoGeneratePipeline": true,
+  "autoGenerateProcess": true,
+  "propagateToEnvironment": true
+}

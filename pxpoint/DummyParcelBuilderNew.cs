@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using PxPoint.Correlation;
-using PxPoint.Logging;
+using LogServices.Correlation;
+using LogServices.Logging;
 
 namespace PxPoint.Dummy
 {
@@ -20,7 +20,7 @@ namespace PxPoint.Dummy
             using var processScope = new ProcessCorrelationScope("ParcelBuilderNew");
             
             // Initialize logger
-            var logger = PxPointLogger.Instance;
+            var logger = StructuredLogger.Instance;
             logger.Initialize("ParcelBuilderNew", LogLevel.Debug);
             
             logger.LogProcessStart("ParcelBuilderNew", new Dictionary<string, object>
@@ -59,7 +59,7 @@ namespace PxPoint.Dummy
             }
         }
         
-        static async Task SimulateDataPreparation(PxPointLogger logger)
+        static async Task SimulateDataPreparation(StructuredLogger logger)
         {
             using var activity = new ActivityCorrelationScope("DataPreparation");
             logger.LogActivityStart("DataPreparation", new Dictionary<string, object>
@@ -94,7 +94,7 @@ namespace PxPoint.Dummy
             }
         }
         
-        static async Task SimulateNormalizationProcess(PxPointLogger logger)
+        static async Task SimulateNormalizationProcess(StructuredLogger logger)
         {
             using var activity = new ActivityCorrelationScope("NormalizationProcess");
             logger.LogActivityStart("NormalizationProcess", new Dictionary<string, object>
@@ -132,7 +132,7 @@ namespace PxPoint.Dummy
             }
         }
         
-        static async Task SimulatePxyGeneration(PxPointLogger logger)
+        static async Task SimulatePxyGeneration(StructuredLogger logger)
         {
             using var activity = new ActivityCorrelationScope("PxyGeneration");
             logger.LogActivityStart("PxyGeneration", new Dictionary<string, object>
@@ -168,7 +168,7 @@ namespace PxPoint.Dummy
             }
         }
         
-        static async Task SimulateChildProcess(string processName, PxPointLogger logger)
+        static async Task SimulateChildProcess(string processName, StructuredLogger logger)
         {
             using var childActivity = new ActivityCorrelationScope($"ChildProcess_{processName}");
             
@@ -176,7 +176,7 @@ namespace PxPoint.Dummy
                 new Dictionary<string, object>
                 {
                     ["child_process"] = processName,
-                    ["correlation_id"] = PxPointCorrelationManager.Instance.GetFullCorrelationId()
+                    ["correlation_id"] = CorrelationManager.Instance.GetFullCorrelationId()
                 });
             
             // Simulate process execution time
@@ -190,7 +190,7 @@ namespace PxPoint.Dummy
                 });
         }
         
-        static async Task SimulateFipsProcessing(PxPointLogger logger)
+        static async Task SimulateFipsProcessing(StructuredLogger logger)
         {
             var fipsCodes = new[] { "01001", "01002", "01003" };
             
@@ -204,16 +204,30 @@ namespace PxPoint.Dummy
                 // Simulate processing time per FIPS
                 await Task.Delay(Random.Shared.Next(200, 800));
                 
+                var parcelsProcessed = Random.Shared.Next(5000, 15000);
                 logger.LogDebug("DataPreparation", $"FIPS processing completed: {fips}",
                     new Dictionary<string, object>
                     {
                         ["fips_code"] = fips,
-                        ["parcels_processed"] = Random.Shared.Next(5000, 15000)
+                        ["parcels_processed"] = parcelsProcessed
                     });
+                    
+                // Demonstrate performance logging
+                logger.LogPerformance($"ProcessFips_{fips}", 800, 
+                    new Dictionary<string, object> { ["fips_code"] = fips },
+                    new Dictionary<string, double> { ["parcels_per_second"] = parcelsProcessed / 0.8 });
             }
+            
+            // Log aggregate operation completion
+            logger.LogEvent("fips_batch_processing_end", "Completed batch FIPS processing", 
+                new Dictionary<string, object>
+                {
+                    ["fips_count"] = fipsCodes.Length,
+                    ["success"] = true
+                });
         }
         
-        static async Task SimulateNormalizationJob(int jobId, PxPointLogger logger)
+        static async Task SimulateNormalizationJob(int jobId, StructuredLogger logger)
         {
             using var jobActivity = new ActivityCorrelationScope($"NormalizationJob_{jobId}");
             
@@ -246,7 +260,7 @@ namespace PxPoint.Dummy
             }
         }
         
-        static async Task SimulatePxyGenerationForFips(string fips, PxPointLogger logger)
+        static async Task SimulatePxyGenerationForFips(string fips, StructuredLogger logger)
         {
             using var pxyActivity = new ActivityCorrelationScope($"GeneratePxy_{fips}");
             

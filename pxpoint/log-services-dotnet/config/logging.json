@@ -1,0 +1,41 @@
+{
+  "name": "application",
+  "level": "Info",
+  "defaultPattern": "{timestamp:yyyy-MM-ddTHH:mm:ss.fffZ} [{level}] [{name}] {message}",
+  "jsonPattern": "json",
+  "asyncLogging": true,
+  "asyncQueueSize": 8192,
+  "asyncThreadCount": 1,
+  "asyncOverflowPolicy": "block",
+  "logDirectory": "/tmp/pxpoint-logs",
+  "autoAddCorrelation": true,
+  "flushOnError": true,
+  "flushIntervalSeconds": 5,
+  "sinks": [
+    {
+      "type": "Console",
+      "name": "console",
+      "level": "Info",
+      "pattern": "{timestamp:yyyy-MM-ddTHH:mm:ss.fff} [{level}] [{name}] {message}",
+      "colorMode": true
+    },
+    {
+      "type": "DailyFile",
+      "name": "daily_file",
+      "level": "Debug",
+      "filePath": "{log_directory}/{process_type}-{date}.log",
+      "maxFileSize": 10485760,
+      "maxFiles": 7,
+      "rotationHour": 0,
+      "rotationMinute": 0
+    },
+    {
+      "type": "RotatingFile",
+      "name": "error_file",
+      "level": "Error",
+      "filePath": "{log_directory}/errors-{process_type}.log",
+      "maxFileSize": 5242880,
+      "maxFiles": 10
+    }
+  ]
+}

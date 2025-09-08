@@ -13,8 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="PxPointCorrelation.cs" />
-    <Compile Include="PxPointLogger.cs" />
+    <ProjectReference Include="log-services-dotnet/LogServices.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="DummyParcelBuilderNew.cs" />
   </ItemGroup>
 
