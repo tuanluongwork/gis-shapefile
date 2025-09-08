@@ -21,7 +21,7 @@ xpack.security.enabled: false
 xpack.security.enrollment.enabled: false
 
 # Index settings
-action.auto_create_index: "+gis-*,+filebeat-*,+logstash-*,-*"
+action.auto_create_index: "+gis-*,+pxp-logs-*,+filebeat-*,+logstash-*,-*"
 
 # Performance settings
 indices.memory.index_buffer_size: 10%

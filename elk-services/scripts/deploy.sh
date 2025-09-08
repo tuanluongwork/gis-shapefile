@@ -80,6 +80,14 @@ done
 
 echo "✅ Kibana is ready!"
 
+# Configure Kibana Analytics
+echo "🔧 Configuring Kibana Analytics..."
+if [ -f "$SCRIPT_DIR/configure-kibana-analytics.sh" ]; then
+    "$SCRIPT_DIR/configure-kibana-analytics.sh"
+else
+    echo "⚠️  Analytics configuration script not found, manual setup required"
+fi
+
 # Check all services status
 echo "📊 Checking services status..."
 docker-compose ps
@@ -93,6 +101,13 @@ echo "   • Kibana:        http://localhost:5601"
 echo "   • Logstash:      http://localhost:9600"
 echo ""
 echo "📁 Log files should be placed in: ${LOG_SOURCE_PATH:-/tmp/pxpoint-logs}"
+echo ""
+echo "🔍 Quick Start Guide:"
+echo "   1. Open Kibana: http://localhost:5601"
+echo "   2. Go to Analytics → Discover"
+echo "   3. Select 'pxp-logs-*' data view"
+echo "   4. Set time range to 'Last 24 hours'"
+echo "   5. Explore your logs!"
 echo ""
 echo "🔧 To stop the services: ./scripts/stop.sh"
 echo "🔄 To restart the services: ./scripts/restart.sh"
