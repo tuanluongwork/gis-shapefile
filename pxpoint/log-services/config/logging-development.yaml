@@ -1,0 +1,40 @@
+# Development Structured Logging Configuration
+logging:
+  name: "dev-app"
+  level: "debug"  # More verbose for development
+  default_pattern: "%Y-%m-%dT%H:%M:%S.%f [%^%l%$] [%n:%t] %v"
+  json_pattern: '{"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%^%l%$","logger":"%n","thread":"%t","file":"%g","line":%#,"function":"%!","message":"%v"}'
+  
+  # Sync logging for easier debugging
+  async_logging: false
+  
+  # Development log directory
+  log_directory: "./logs"
+  auto_add_correlation: true
+  flush_on_error: true
+  flush_interval: 1  # Frequent flushing for development
+  
+  sinks:
+    # Colorful console output for development
+    - type: "console"
+      name: "console"
+      level: "debug"
+      pattern: "%Y-%m-%d %H:%M:%S.%f [%^%=8l%$] [%n] %v"
+      color_mode: true
+      
+    # Simple file for development
+    - type: "file"
+      name: "dev_file"
+      level: "debug"
+      pattern: '{"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%^%l%$","logger":"%n","thread":"%t","file":"%g","line":%#,"function":"%!","message":"%v"}'
+      file_path: "./logs/{}-dev.log"
+
+correlation:
+  pipeline_id_prefix: "dev-pipeline"
+  process_id_prefix: "dev-proc"
+  activity_id_prefix: "act"
+  env_var_pipeline: "DEV_PIPELINE_ID"
+  env_var_process: "DEV_PROCESS_ID"
+  auto_generate_pipeline: true
+  auto_generate_process: true
+  propagate_to_environment: true

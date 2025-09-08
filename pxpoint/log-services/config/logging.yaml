@@ -1,0 +1,52 @@
+# Structured Logging Configuration
+logging:
+  name: "application"
+  level: "info"
+  default_pattern: "%Y-%m-%dT%H:%M:%S.%fZ [%^%l%$] [%n] %v"
+  json_pattern: '{"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%^%l%$","logger":"%n","thread":"%t","message":"%v"}'
+  
+  # Async logging configuration
+  async_logging: true
+  async_queue_size: 8192
+  async_thread_count: 1
+  
+  # Output configuration
+  log_directory: "/tmp/logs"
+  auto_add_correlation: true
+  flush_on_error: true
+  flush_interval: 5  # seconds
+  
+  # Sinks configuration
+  sinks:
+    - type: "console"
+      name: "console"
+      level: "info"
+      pattern: "%Y-%m-%dT%H:%M:%S.%f [%^%l%$] [%n] %v"
+      color_mode: true
+      
+    - type: "daily_file"
+      name: "daily_file"
+      level: "debug"
+      pattern: '{"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%^%l%$","logger":"%n","thread":"%t","process_id":"%P","message":"%v"}'
+      file_path: "/tmp/logs/{}-daily.log"
+      rotation_hour: 0
+      rotation_minute: 0
+      
+    - type: "rotating_file"
+      name: "error_file"
+      level: "warn"
+      pattern: '{"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%^%l%$","logger":"%n","thread":"%t","process_id":"%P","message":"%v"}'
+      file_path: "/tmp/logs/{}-errors.log"
+      max_file_size: 10485760  # 10MB
+      max_files: 5
+
+# Correlation Configuration
+correlation:
+  pipeline_id_prefix: "pipeline"
+  process_id_prefix: "proc"
+  activity_id_prefix: "act"
+  env_var_pipeline: "LOG_PIPELINE_ID"
+  env_var_process: "LOG_PROCESS_ID"
+  auto_generate_pipeline: true
+  auto_generate_process: true
+  propagate_to_environment: true

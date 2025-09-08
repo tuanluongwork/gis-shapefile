@@ -1,5 +1,5 @@
-#include "pxpoint_logger.h"
-#include "pxpoint_correlation.h"
+#include "log-services/include/structured_logger.h"
+#include "log-services/include/correlation_manager.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -9,9 +9,11 @@
 #include <sstream>
 #include <iomanip>
 
+using namespace logservices;
+
 /**
  * Dummy C++ process simulating ParcelLoad4G or similar low-level PxPoint application
- * This demonstrates how correlation works in C++ processes within the PxPoint pipeline
+ * This demonstrates how the new generic log-services work in C++ processes
  */
 
 struct ParcelData {
@@ -54,14 +56,14 @@ private:
             );
         }
         
-        PXPOINT_LOG_INFO("DataGeneration", "Generated sample parcel data", 
+        LOG_COMPONENT_INFO("DataGeneration", "Generated sample parcel data", 
             {{"parcel_count", std::to_string(count)}, {"fips_code", fips_code_}});
     }
     
     void processGeocoding() {
-        pxpoint::ActivityCorrelationScope activity_scope("GeocodeAddresses");
+        ActivityScope activity_scope("GeocodeAddresses");
         
-        PXPOINT_LOG_INFO("Geocoding", "Starting address geocoding", 
+        LOG_COMPONENT_INFO("Geocoding", "Starting address geocoding", 
             {{"total_parcels", std::to_string(parcels_.size())}});
         
         auto start_time = std::chrono::steady_clock::now();
@@ -70,12 +72,12 @@ private:
         
         for (auto& parcel : parcels_) {
             // Simulate geocoding processing time
-            std::this_thread::sleep_for(std::chrono::milliseconds(5 + (random_gen_() % 10)));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1 + (random_gen_() % 3))); // Faster for demo
             
             // Simulate occasional geocoding errors (5% chance)
             if ((random_gen_() % 100) < 5) {
                 error_count++;
-                PXPOINT_LOG_WARN("Geocoding", "Failed to geocode parcel", 
+                LOG_COMPONENT_WARN("Geocoding", "Failed to geocode parcel", 
                     {{"parcel_id", parcel.parcel_id}, 
                      {"address", parcel.address},
                      {"error_reason", "Invalid address format"}});
@@ -84,9 +86,9 @@ private:
             
             processed_count++;
             
-            // Log every 1000th parcel for progress tracking
-            if (processed_count % 1000 == 0) {
-                PXPOINT_LOG_DEBUG("Geocoding", "Geocoding progress", 
+            // Log every 500th parcel for progress tracking
+            if (processed_count % 500 == 0) {
+                LOG_COMPONENT_DEBUG("Geocoding", "Geocoding progress", 
                     {{"processed", std::to_string(processed_count)}, 
                      {"total", std::to_string(parcels_.size())}});
             }
@@ -95,48 +97,51 @@ private:
         auto end_time = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
         
-        PXPOINT_LOG_INFO("Geocoding", "Geocoding completed", 
+        auto& logger = StructuredLogger::getInstance();
+        logger.logPerformance("GeocodeAddresses", static_cast<double>(duration.count()),
             {{"processed_count", std::to_string(processed_count)},
              {"error_count", std::to_string(error_count)},
              {"success_rate", std::to_string((processed_count * 100.0) / parcels_.size()) + "%"}},
-            {{"execution_time_ms", static_cast<double>(duration.count())},
-             {"parcels_per_second", processed_count * 1000.0 / duration.count()}});
+            {{"parcels_per_second", processed_count * 1000.0 / duration.count()}});
     }
     
     void buildSpatialIndex() {
-        pxpoint::ActivityCorrelationScope activity_scope("BuildSpatialIndex");
+        LOG_ACTIVITY_SCOPE("BuildSpatialIndex");
         
-        PXPOINT_LOG_INFO("SpatialIndex", "Building R-tree spatial index", 
+        LOG_COMPONENT_INFO("SpatialIndex", "Building R-tree spatial index", 
             {{"parcel_count", std::to_string(parcels_.size())}});
         
         auto start_time = std::chrono::steady_clock::now();
         
         // Simulate spatial index building - more CPU intensive
-        for (int i = 0; i < 100; ++i) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(20 + (random_gen_() % 30)));
+        for (int i = 0; i < 50; ++i) { // Reduced for demo
+            std::this_thread::sleep_for(std::chrono::milliseconds(5 + (random_gen_() % 10)));
             
-            if (i % 20 == 0) {
-                PXPOINT_LOG_DEBUG("SpatialIndex", "Index building progress", 
-                    {{"progress_percent", std::to_string(i)}});
+            if (i % 10 == 0) {
+                LOG_COMPONENT_DEBUG("SpatialIndex", "Index building progress", 
+                    {{"progress_percent", std::to_string(i * 2)}});
             }
         }
         
         auto end_time = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
         
-        PXPOINT_LOG_INFO("SpatialIndex", "Spatial index built successfully", 
-            {{"index_type", "R-tree"}, {"nodes_created", "1547"}},
-            {{"build_time_ms", static_cast<double>(duration.count())},
-             {"memory_usage_mb", 12.5}});
+        LOG_COMPONENT_INFO("SpatialIndex", "Spatial index built successfully", 
+            {{"index_type", "R-tree"}, {"nodes_created", "1547"}});
+            
+        auto& logger = StructuredLogger::getInstance();
+        logger.logPerformance("BuildSpatialIndex", static_cast<double>(duration.count()),
+            {{"index_type", "R-tree"}}, 
+            {{"memory_usage_mb", 12.5}});
     }
     
     void generateOutputFile() {
-        pxpoint::ActivityCorrelationScope activity_scope("GenerateOutput");
+        LOG_ACTIVITY_SCOPE("GenerateOutput");
         
         std::stringstream output_file;
-        output_file << "/tmp/pxpoint-logs/parcel_output_" << fips_code_ << ".pxy";
+        output_file << "/tmp/logs/parcel_output_" << fips_code_ << ".pxy";
         
-        PXPOINT_LOG_INFO("OutputGeneration", "Generating PXY output file", 
+        LOG_COMPONENT_INFO("OutputGeneration", "Generating PXY output file", 
             {{"output_file", output_file.str()},
              {"format", "PXY"},
              {"parcel_count", std::to_string(parcels_.size())}});
@@ -144,11 +149,11 @@ private:
         auto start_time = std::chrono::steady_clock::now();
         
         // Simulate file writing - I/O intensive
-        for (size_t i = 0; i < parcels_.size(); i += 100) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        for (size_t i = 0; i < parcels_.size(); i += 200) { // Faster chunks for demo
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
             
             if (i % 1000 == 0) {
-                PXPOINT_LOG_DEBUG("OutputGeneration", "File write progress", 
+                LOG_COMPONENT_DEBUG("OutputGeneration", "File write progress", 
                     {{"parcels_written", std::to_string(i)},
                      {"percent_complete", std::to_string((i * 100) / parcels_.size())}});
             }
@@ -160,11 +165,12 @@ private:
         // Calculate simulated file size
         double file_size_mb = parcels_.size() * 0.001; // Rough estimate
         
-        PXPOINT_LOG_INFO("OutputGeneration", "Output file generated successfully", 
+        auto& logger = StructuredLogger::getInstance();
+        logger.logPerformance("GenerateOutput", static_cast<double>(duration.count()),
             {{"output_file", output_file.str()},
-             {"records_written", std::to_string(parcels_.size())}},
-            {{"write_time_ms", static_cast<double>(duration.count())},
-             {"file_size_mb", file_size_mb},
+             {"records_written", std::to_string(parcels_.size())},
+             {"format", "PXY"}},
+            {{"file_size_mb", file_size_mb},
              {"write_speed_mbps", file_size_mb * 1000.0 / duration.count()}});
     }
     
@@ -173,17 +179,18 @@ public:
         : fips_code_(fips_code), random_gen_(std::random_device{}()) {}
     
     void run() {
-        auto& logger = pxpoint::PxPointLogger::getInstance();
+        auto& logger = StructuredLogger::getInstance();
         
         logger.logProcessStart("DummyParcelProcessor", 
             {{"fips_code", fips_code_}, 
-             {"process_version", "2.1.0"}});
+             {"process_version", "3.0.0"},
+             {"log_services_version", "1.0.0"}});
         
         try {
-            auto overall_start = std::chrono::steady_clock::now();
+            LOG_PERFORMANCE_SCOPE("OverallProcessing", {{"fips_code", fips_code_}});
             
             // Step 1: Generate sample data
-            generateSampleParcels(5000 + (random_gen_() % 5000)); // 5K-10K parcels
+            generateSampleParcels(1000 + (random_gen_() % 2000)); // 1K-3K parcels for faster demo
             
             // Step 2: Process geocoding
             processGeocoding();
@@ -194,13 +201,8 @@ public:
             // Step 4: Generate output file
             generateOutputFile();
             
-            auto overall_end = std::chrono::steady_clock::now();
-            auto total_duration = std::chrono::duration_cast<std::chrono::milliseconds>(overall_end - overall_start);
-            
             logger.logProcessEnd("DummyParcelProcessor", true,
-                {{"total_execution_time_ms", static_cast<double>(total_duration.count())},
-                 {"parcels_processed", static_cast<double>(parcels_.size())},
-                 {"average_time_per_parcel_ms", static_cast<double>(total_duration.count()) / parcels_.size()}});
+                {{"parcels_processed", static_cast<double>(parcels_.size())}});
                  
         } catch (const std::exception& e) {
             logger.logError("Main", "Process failed with exception", e.what(),
@@ -213,35 +215,47 @@ public:
 
 int main(int argc, char* argv[]) {
     try {
-        // Initialize process correlation scope
-        pxpoint::ProcessCorrelationScope process_scope("ParcelProcessor");
+        // Configure correlation manager
+        auto& correlation = CorrelationManager::getInstance();
         
-        // Initialize PxPoint logger
-        auto& logger = pxpoint::PxPointLogger::getInstance();
+        // Load correlation from environment if available (for multi-process scenarios)
+        correlation.loadFromEnvironment();
+        
+        // Initialize process correlation scope
+        ProcessScope process_scope("ParcelProcessor");
+        
+        // Initialize generic structured logger
+        auto& logger = StructuredLogger::getInstance();
         logger.initialize("ParcelProcessor", spdlog::level::debug);
         
         // Get FIPS code from command line or use default
         std::string fips_code = (argc > 1) ? argv[1] : "01001";
         
-        PXPOINT_LOG_INFO("Main", "Starting Dummy Parcel Processor", 
+        LOG_INFO("Starting Dummy Parcel Processor", 
             {{"fips_code", fips_code}, 
              {"argc", std::to_string(argc)},
-             {"correlation_id", pxpoint::PxPointCorrelationManager::getInstance().getFullCorrelationId()}});
+             {"pipeline_id", correlation.getPipelineId()},
+             {"process_id", correlation.getProcessId()},
+             {"log_services_version", "1.0.0"}});
         
         // Run the processing
         DummyParcelProcessor processor(fips_code);
         processor.run();
         
-        PXPOINT_LOG_INFO("Main", "Process completed successfully");
+        LOG_INFO("Process completed successfully", {{"fips_code", fips_code}});
         
-        // Shutdown logger
-        logger.shutdown();
+        // Ensure all logs are written before exit
+        logger.flush();
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        
         return 0;
         
     } catch (const std::exception& e) {
+        LOG_CRITICAL("Fatal error occurred", {{"exception", e.what()}});
         std::cerr << "Fatal error: " << e.what() << std::endl;
         return 1;
     } catch (...) {
+        LOG_CRITICAL("Unknown fatal error occurred");
         std::cerr << "Fatal error: Unknown exception" << std::endl;
         return 2;
     }

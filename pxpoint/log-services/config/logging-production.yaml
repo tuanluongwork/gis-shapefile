@@ -1,0 +1,62 @@
+# Production Structured Logging Configuration
+logging:
+  name: "production-app"
+  level: "info"
+  default_pattern: "%Y-%m-%dT%H:%M:%S.%fZ [%^%l%$] [%n] %v"
+  json_pattern: '{"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%^%l%$","logger":"%n","thread":"%t","process_id":"%P","hostname":"%h","message":"%v"}'
+  
+  # High-performance async logging for production
+  async_logging: true
+  async_queue_size: 32768  # Larger queue for high throughput
+  async_thread_count: 2    # More threads for production
+  
+  # Production log directory
+  log_directory: "/var/log/application"
+  auto_add_correlation: true
+  flush_on_error: true
+  flush_interval: 3  # More frequent flushing in production
+  
+  sinks:
+    # Console output for container environments
+    - type: "console"
+      name: "console"
+      level: "warn"  # Only warnings and errors to console in production
+      pattern: '{"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%^%l%$","logger":"%n","thread":"%t","process_id":"%P","hostname":"%h","message":"%v"}'
+      color_mode: false
+      
+    # Daily rotating file for all logs
+    - type: "daily_file"
+      name: "daily_app"
+      level: "info"
+      pattern: '{"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%^%l%$","logger":"%n","thread":"%t","process_id":"%P","hostname":"%h","message":"%v"}'
+      file_path: "/var/log/application/{}-app.log"
+      rotation_hour: 0
+      rotation_minute: 0
+      
+    # Separate error log with rotation
+    - type: "rotating_file"
+      name: "error_rotating"
+      level: "error"
+      pattern: '{"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%^%l%$","logger":"%n","thread":"%t","process_id":"%P","hostname":"%h","message":"%v","stack_trace":"%@"}'
+      file_path: "/var/log/application/{}-errors.log"
+      max_file_size: 52428800  # 50MB for production
+      max_files: 10
+      
+    # High-frequency debug log (if needed)
+    - type: "rotating_file"
+      name: "debug_rotating"
+      level: "debug"
+      pattern: '{"timestamp":"%Y-%m-%dT%H:%M:%S.%fZ","level":"%^%l%$","logger":"%n","thread":"%t","process_id":"%P","hostname":"%h","message":"%v"}'
+      file_path: "/var/log/application/{}-debug.log"
+      max_file_size: 104857600  # 100MB
+      max_files: 3
+
+correlation:
+  pipeline_id_prefix: "prod-pipeline"
+  process_id_prefix: "prod-proc"
+  activity_id_prefix: "act"
+  env_var_pipeline: "APP_PIPELINE_ID"
+  env_var_process: "APP_PROCESS_ID"
+  auto_generate_pipeline: true
+  auto_generate_process: true
+  propagate_to_environment: true
