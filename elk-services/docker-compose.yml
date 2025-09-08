@@ -9,9 +9,8 @@ services:
       - cluster.name=${APPLICATION_NAME:-myapp}-logging-cluster
       - discovery.type=single-node
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms${ELASTICSEARCH_HEAP_SIZE:-1g} -Xmx${ELASTICSEARCH_HEAP_SIZE:-1g}"
+      - "ES_JAVA_OPTS=-Xms${ELASTICSEARCH_HEAP_SIZE:-512m} -Xmx${ELASTICSEARCH_HEAP_SIZE:-512m}"
       - xpack.security.enabled=false
-      - xpack.security.enrollment.enabled=false
     ulimits:
       memlock:
         soft: -1
@@ -21,7 +20,6 @@ services:
       - ./config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     ports:
       - "${ELASTICSEARCH_PORT:-9200}:9200"
-      - "9300:9300"
     networks:
       - elk-network
     healthcheck:
@@ -37,11 +35,8 @@ services:
       - ./config/logstash/pipeline:/usr/share/logstash/pipeline:ro
     ports:
       - "${LOGSTASH_BEATS_PORT:-5044}:5044"
-      - "5000:5000/tcp"
-      - "5000:5000/udp"
-      - "9600:9600"
     environment:
-      - LS_JAVA_OPTS=-Xmx${LOGSTASH_HEAP_SIZE:-512m} -Xms${LOGSTASH_HEAP_SIZE:-512m}
+      - LS_JAVA_OPTS=-Xmx${LOGSTASH_HEAP_SIZE:-256m} -Xms${LOGSTASH_HEAP_SIZE:-256m}
       - LOG_FORMAT=${LOG_FORMAT:-json}
       - LOG_TYPE=${LOG_TYPE:-application}
       - APPLICATION_NAME=${APPLICATION_NAME:-myapp}
@@ -51,11 +46,6 @@ services:
       - THREAD_PATTERN=${THREAD_PATTERN:-}
       - CUSTOM_GROK_PATTERN=${CUSTOM_GROK_PATTERN:-}
       - DEBUG_OUTPUT=${DEBUG_OUTPUT:-false}
-      - XPACK_MONITORING_ENABLED=false
-      - LOG_LEVEL=info
-      - HTTP_HOST=0.0.0.0
-      - PATH_CONFIG=/usr/share/logstash/pipeline
-      - CONFIG_RELOAD_AUTOMATIC=true
     networks:
       - elk-network
     depends_on:
@@ -91,16 +81,14 @@ services:
     user: root
     command: >
       bash -c "
-        cp /tmp/filebeat.yml /usr/share/filebeat/filebeat.yml &&
+        cp /usr/share/filebeat/filebeat.yml.orig /usr/share/filebeat/filebeat.yml &&
         chown root:root /usr/share/filebeat/filebeat.yml &&
         chmod 600 /usr/share/filebeat/filebeat.yml &&
         /usr/local/bin/docker-entrypoint -e
       "
     volumes:
-      - ./config/filebeat/filebeat.yml:/tmp/filebeat.yml:ro
+      - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml.orig:ro
       - ${LOG_SOURCE_PATH:-/tmp/pxpoint-logs}:/usr/share/filebeat/inputlogs:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - filebeat_data:/usr/share/filebeat/data
       - filebeat_logs:/usr/share/filebeat/logs
     networks:
@@ -121,23 +109,6 @@ services:
     labels:
       - "co.elastic.logs/enabled=false"
 
-  # Log generator for testing (optional)
-  log-generator:
-    image: alpine:latest
-    container_name: ${APPLICATION_NAME:-myapp}-log-generator
-    volumes:
-      - ${LOG_SOURCE_PATH:-/tmp/pxpoint-logs}:/logs
-    networks:
-      - elk-network
-    profiles: ["testing"]
-    command: >
-      sh -c "
-      apk add --no-cache bash;
-      while true; do
-        echo '{"timestamp":"'$$(date -u +%Y-%m-%dT%H:%M:%S.%6NZ)'","level":"info","logger":"${APPLICATION_NAME:-myapp}TestLogger","message":"Test log entry | correlation_id:test-'$$RANDOM' component:generator status:active"}' >> /logs/test-${APPLICATION_NAME:-myapp}.log;
-        sleep 10;
-      done
-      "
 
 networks:
   elk-network:
