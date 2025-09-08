@@ -352,14 +352,22 @@ TEST_CASE_METHOD(LoggerTestFixture, "StructuredLogger macro usage", "[logger][ma
     }
     
     SECTION("Performance and activity macros") {
+        // Test performance scope macro
         {
-            REQUIRE_NOTHROW(LOG_PERFORMANCE_SCOPE("macro_operation", {{"type", "test"}}));
+            std::unordered_map<std::string, std::string> perf_context{{"type", "test"}};
+            LOG_PERFORMANCE_SCOPE("macro_operation", perf_context);
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            // If we reach here without exception, the test passed
+            REQUIRE(true);
         }
         
+        // Test activity scope macro  
         {
-            REQUIRE_NOTHROW(LOG_ACTIVITY_SCOPE("macro_activity", {{"activity_type", "test"}}));
+            std::unordered_map<std::string, std::string> activity_context{{"activity_type", "test"}};
+            LOG_ACTIVITY_SCOPE("macro_activity", activity_context);
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            // If we reach here without exception, the test passed
+            REQUIRE(true);
         }
     }
 }

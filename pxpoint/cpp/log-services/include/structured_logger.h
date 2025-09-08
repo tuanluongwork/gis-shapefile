@@ -193,6 +193,12 @@ private:
 
 } // namespace logservices
 
+// Suppress GNU extension warnings for variadic macros
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#pragma GCC diagnostic push 
+#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+
 // Convenience macros for structured logging
 #define LOG_DEBUG(message, ...) \
     logservices::StructuredLogger::getInstance().debug(message, ##__VA_ARGS__)
@@ -232,3 +238,6 @@ private:
 #define LOG_ACTIVITY_SCOPE(activity_name, ...) \
     logservices::ActivityScope _activity_scope(activity_name, ##__VA_ARGS__); \
     logservices::StructuredLogger::getInstance().logActivityStart(activity_name, ##__VA_ARGS__)
+
+#pragma clang diagnostic pop
+#pragma GCC diagnostic pop

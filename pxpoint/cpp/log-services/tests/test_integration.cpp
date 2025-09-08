@@ -474,7 +474,7 @@ TEST_CASE_METHOD(IntegrationTestFixture, "Error handling and recovery", "[integr
         // Test that the system continues to work even if some operations fail
         
         // Attempt to log with null/empty values
-        REQUIRE_NOTHROW(logger.info("", {}));  // Empty message
+        REQUIRE_NOTHROW(logger.info("", std::unordered_map<std::string, std::string>{}));  // Empty message
         REQUIRE_NOTHROW(logger.info("Test", {{"", "empty_key"}}));  // Empty key
         REQUIRE_NOTHROW(logger.info("Test", {{"key", ""}}));  // Empty value
         

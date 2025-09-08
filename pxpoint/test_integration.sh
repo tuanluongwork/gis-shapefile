@@ -16,7 +16,7 @@ echo "Configuring build..."
 cmake .. -DCMAKE_BUILD_TYPE=Debug
 
 echo "Building..."
-make -j$(nproc)
+make -j$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
 
 echo ""
 echo "=== Running Integration Tests ==="
