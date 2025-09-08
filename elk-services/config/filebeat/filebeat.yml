@@ -31,5 +31,3 @@ processors:
     fields:
       log_source: filebeat
       environment: ${ENVIRONMENT:development}
-
-

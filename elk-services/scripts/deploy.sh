@@ -82,8 +82,8 @@ echo "✅ Kibana is ready!"
 
 # Configure Kibana Analytics
 echo "🔧 Configuring Kibana Analytics..."
-if [ -f "$SCRIPT_DIR/configure-kibana-analytics.sh" ]; then
-    "$SCRIPT_DIR/configure-kibana-analytics.sh"
+if [ -f "$SCRIPT_DIR/tools/configure-kibana-analytics.sh" ]; then
+    "$SCRIPT_DIR/tools/configure-kibana-analytics.sh"
 else
     echo "⚠️  Analytics configuration script not found, manual setup required"
 fi
