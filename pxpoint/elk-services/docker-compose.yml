@@ -1,0 +1,127 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: ${APPLICATION_NAME:-myapp}-elasticsearch
+    environment:
+      - node.name=${APPLICATION_NAME:-myapp}-elasticsearch
+      - cluster.name=${APPLICATION_NAME:-myapp}-logging-cluster
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms${ELASTICSEARCH_HEAP_SIZE:-512m} -Xmx${ELASTICSEARCH_HEAP_SIZE:-512m}"
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+      - ./config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    networks:
+      - elk-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: ${APPLICATION_NAME:-myapp}-logstash
+    volumes:
+      - ./config/logstash/pipeline:/usr/share/logstash/pipeline:ro
+    ports:
+      - "${LOGSTASH_BEATS_PORT:-5044}:5044"
+    environment:
+      - LS_JAVA_OPTS=-Xmx${LOGSTASH_HEAP_SIZE:-256m} -Xms${LOGSTASH_HEAP_SIZE:-256m}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+      - LOG_TYPE=${LOG_TYPE:-application}
+      - APPLICATION_NAME=${APPLICATION_NAME:-myapp}
+      - INDEX_PREFIX=${INDEX_PREFIX:-app-logs}
+      - INDEX_DATE_PATTERN=${INDEX_DATE_PATTERN:-YYYY.MM.dd}
+      - CORRELATION_ID_PATTERN=${CORRELATION_ID_PATTERN:-}
+      - THREAD_PATTERN=${THREAD_PATTERN:-}
+      - CUSTOM_GROK_PATTERN=${CUSTOM_GROK_PATTERN:-}
+      - DEBUG_OUTPUT=${DEBUG_OUTPUT:-false}
+    networks:
+      - elk-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: ${APPLICATION_NAME:-myapp}-kibana
+    volumes:
+      - ./config/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    ports:
+      - "${KIBANA_PORT:-5601}:5601"
+    networks:
+      - elk-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    container_name: ${APPLICATION_NAME:-myapp}-filebeat
+    user: root
+    command: >
+      bash -c "
+        cp /usr/share/filebeat/filebeat.yml.orig /usr/share/filebeat/filebeat.yml &&
+        chown root:root /usr/share/filebeat/filebeat.yml &&
+        chmod 600 /usr/share/filebeat/filebeat.yml &&
+        /usr/local/bin/docker-entrypoint -e
+      "
+    volumes:
+      - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml.orig:ro
+      - ${LOG_SOURCE_PATH:-/tmp/pxpoint-logs}:/usr/share/filebeat/inputlogs:ro
+      - filebeat_data:/usr/share/filebeat/data
+      - filebeat_logs:/usr/share/filebeat/logs
+    networks:
+      - elk-network
+    environment:
+      - LOG_TYPE=${LOG_TYPE:-application}
+      - APPLICATION_NAME=${APPLICATION_NAME:-myapp}
+      - FIELDS_UNDER_ROOT=${FIELDS_UNDER_ROOT:-false}
+      - SCAN_FREQUENCY=${SCAN_FREQUENCY:-10s}
+      - FILEBEAT_BUFFER_SIZE=${FILEBEAT_BUFFER_SIZE:-16384}
+      - FILEBEAT_MAX_BYTES=${FILEBEAT_MAX_BYTES:-10485760}
+      - JSON_KEYS_UNDER_ROOT=${JSON_KEYS_UNDER_ROOT:-true}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - INDEX_PREFIX=${INDEX_PREFIX:-app-logs}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    labels:
+      - "co.elastic.logs/enabled=false"
+
+
+networks:
+  elk-network:
+    driver: bridge
+    name: ${APPLICATION_NAME:-myapp}-logging-network
+
+volumes:
+  elasticsearch_data:
+    driver: local
+    name: ${APPLICATION_NAME:-myapp}_elasticsearch_data
+  filebeat_data:
+    driver: local
+    name: ${APPLICATION_NAME:-myapp}_filebeat_data
+  filebeat_logs:
+    driver: local
+    name: ${APPLICATION_NAME:-myapp}_filebeat_logs
