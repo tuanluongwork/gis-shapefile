@@ -74,13 +74,27 @@ private:
             // Simulate geocoding processing time
             std::this_thread::sleep_for(std::chrono::milliseconds(1 + (random_gen_() % 3))); // Faster for demo
             
-            // Simulate occasional geocoding errors (5% chance)
-            if ((random_gen_() % 100) < 5) {
+            // Simulate realistic geocoding errors (1% chance for production-like behavior)
+            if ((random_gen_() % 1000) < 10) {
                 error_count++;
-                LOG_COMPONENT_WARN("Geocoding", "Failed to geocode parcel", 
-                    {{"parcel_id", parcel.parcel_id}, 
-                     {"address", parcel.address},
-                     {"error_reason", "Invalid address format"}});
+                
+                // Vary error reasons to be more realistic
+                std::vector<std::string> error_reasons = {
+                    "Address not found in geocoding service",
+                    "Ambiguous address - multiple matches",
+                    "Network timeout during geocoding",
+                    "Invalid coordinates returned"
+                };
+                std::string error_reason = error_reasons[random_gen_() % error_reasons.size()];
+                
+                // Only log every 10th error to reduce log noise
+                if (error_count % 10 == 0) {
+                    LOG_COMPONENT_WARN("Geocoding", "Geocoding failures detected", 
+                        {{"recent_failures", std::to_string(10)},
+                         {"sample_parcel_id", parcel.parcel_id}, 
+                         {"sample_address", parcel.address},
+                         {"sample_error_reason", error_reason}});
+                }
                 continue;
             }
             

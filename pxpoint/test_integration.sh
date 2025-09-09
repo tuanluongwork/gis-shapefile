@@ -27,7 +27,7 @@ mkdir -p /tmp/pxpoint-logs
 
 echo ""
 echo "1. Testing basic functionality (backward compatibility)..."
-if ./dummy_parcel_processor; then
+if ./bin/dummy_parcel_processor; then
     echo "✅ Basic functionality test passed"
 else
     echo "❌ Basic functionality test failed"
