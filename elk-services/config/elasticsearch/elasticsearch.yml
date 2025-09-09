@@ -1,3 +1,0 @@
-network.host: 0.0.0.0
-action.auto_create_index: "+*-logs-*,+filebeat-*,+logstash-*,-*"
-indices.memory.index_buffer_size: 10%
