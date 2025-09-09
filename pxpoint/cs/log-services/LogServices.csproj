@@ -28,9 +28,5 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="src\CorrelationManager.cs" />
-    <Compile Include="src\StructuredLogger.cs" />
-  </ItemGroup>
 
 </Project>

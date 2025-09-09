@@ -59,7 +59,7 @@ namespace LogServices.Examples
             var taskName = args.Length > 2 ? args[2] : "DefaultTask";
             
             // Load correlation context from environment (set by parent)
-            CorrelationManager.Instance.LoadFromEnvironment();
+            LogServices.Correlation.CorrelationManager.Instance.LoadFromEnvironment();
             
             // Initialize logger for child process
             var logger = StructuredLogger.Instance;
@@ -71,7 +71,7 @@ namespace LogServices.Examples
             logger.LogInfo("ChildProcess", $"Child process {processType} started", new Dictionary<string, object>
             {
                 {"task_name", taskName},
-                {"parent_pipeline", CorrelationManager.Instance.GetPipelineId()}
+                {"parent_pipeline", LogServices.Correlation.CorrelationManager.Instance.GetPipelineId()}
             });
             
             // Simulate work with activities

@@ -77,3 +77,7 @@ external/
 data/
 build*/
 logs/
+
+CLAUDE.md
+bin/
+obj/

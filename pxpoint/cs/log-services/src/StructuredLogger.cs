@@ -802,19 +802,19 @@ namespace LogServices.Logging
         
         // Component-specific logging
         public static void Debug(string component, string message, Dictionary<string, object> context = null)
-            => PxPointLogger.Instance.LogDebug(component, message, context);
+            => StructuredLogger.Instance.LogDebug(component, message, context);
             
         public static void Info(string component, string message, Dictionary<string, object> context = null)
-            => PxPointLogger.Instance.LogInfo(component, message, context);
+            => StructuredLogger.Instance.LogInfo(component, message, context);
             
         public static void Warning(string component, string message, Dictionary<string, object> context = null)
-            => PxPointLogger.Instance.LogWarning(component, message, context);
+            => StructuredLogger.Instance.LogWarning(component, message, context);
             
         public static void Error(string component, string message, Dictionary<string, object> context = null)
-            => PxPointLogger.Instance.LogError(component, message, context);
+            => StructuredLogger.Instance.LogError(component, message, context);
             
         public static void Critical(string component, string message, Dictionary<string, object> context = null)
-            => PxPointLogger.Instance.LogCritical(component, message, context);
+            => StructuredLogger.Instance.LogCritical(component, message, context);
         
         // Performance and activity scopes
         public static PerformanceTimer StartPerformanceTimer(string operationName, Dictionary<string, object> context = null)
