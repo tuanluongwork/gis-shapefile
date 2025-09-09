@@ -21,20 +21,23 @@ done
 # Check if we have data in Elasticsearch
 echo "Checking for data in Elasticsearch..."
 DATA_COUNT=$(curl -s "http://localhost:9200/pxp-logs-*/_count" | jq -r '.count' 2>/dev/null)
-if [ "$DATA_COUNT" = "0" ] || [ "$DATA_COUNT" = "null" ]; then
+echo "Current document count: $DATA_COUNT"
+if [ "$DATA_COUNT" = "0" ] || [ "$DATA_COUNT" = "null" ] || [ -z "$DATA_COUNT" ]; then
     echo "❌ No data found in pxp-logs-* indices"
     echo "Creating sample data..."
     
-    # Create sample data
+    # Create sample data with hierarchical correlation structure
     cat << 'EOF' > /tmp/sample_kibana_data.json
 {"index": {"_index": "pxp-logs-2025.09.08"}}
-{"@timestamp": "2025-09-08T14:30:15.123Z", "level": "info", "logger": "pxpoint.service.main", "message": "Application started successfully", "correlation_id": "app-001", "component": "main", "status": "active", "application": "pxpoint", "log_type": "application", "log_source": "filebeat"}
+{"@timestamp": "2025-09-08T14:30:15.123Z", "level": "info", "logger": "application", "message": "Orchestrator process started", "correlation_pipeline_id": "pipeline-1725804615-123-abc123", "correlation_process_id": "pipeline-1725804615-123-abc123-proc-orchestrator-def456", "component": "orchestrator", "process_type": "orchestrator", "event_type": "process_start", "application": "pxpoint", "log_type": "application", "log_source": "filebeat", "tags": ["has_pipeline_correlation", "has_process_correlation", "event_process_start"]}
 {"index": {"_index": "pxp-logs-2025.09.08"}}
-{"@timestamp": "2025-09-08T14:30:16.234Z", "level": "info", "logger": "pxpoint.gis.processor", "message": "Processing shapefile data", "correlation_id": "gis-002", "component": "processor", "operation": "shapefile_processing", "status": "processing", "application": "pxpoint", "log_type": "application", "log_source": "filebeat"}
+{"@timestamp": "2025-09-08T14:30:16.234Z", "level": "info", "logger": "application", "message": "Starting data processing activity", "correlation_pipeline_id": "pipeline-1725804615-123-abc123", "correlation_process_id": "pipeline-1725804615-123-abc123-proc-geo-processor-ghi789", "correlation_activity_id": "pipeline-1725804615-123-abc123-proc-geo-processor-ghi789-act-data_processing-jkl012", "component": "geo-processor", "process_type": "geo-processor", "activity_name": "data_processing", "step": "coordinate_transformation", "application": "pxpoint", "log_type": "application", "log_source": "filebeat", "tags": ["has_pipeline_correlation", "has_process_correlation", "has_activity_correlation"]}
 {"index": {"_index": "pxp-logs-2025.09.08"}}
-{"@timestamp": "2025-09-08T14:30:17.345Z", "level": "warn", "logger": "pxpoint.database.connection", "message": "Database connection slow", "correlation_id": "db-003", "component": "database", "response_time_ms": 850, "threshold_ms": 500, "status": "warning", "application": "pxpoint", "log_type": "application", "log_source": "filebeat"}
+{"@timestamp": "2025-09-08T14:30:17.345Z", "level": "info", "logger": "application", "message": "Performance measurement: coordinate_transformation", "correlation_pipeline_id": "pipeline-1725804615-123-abc123", "correlation_process_id": "pipeline-1725804615-123-abc123-proc-geo-processor-ghi789", "correlation_activity_id": "pipeline-1725804615-123-abc123-proc-geo-processor-ghi789-act-data_processing-jkl012", "component": "geo-processor", "event_type": "performance", "operation": "coordinate_transformation", "algorithm": "rtree", "duration_ms": 150.25, "application": "pxpoint", "log_type": "application", "log_source": "filebeat", "tags": ["has_pipeline_correlation", "has_process_correlation", "has_activity_correlation", "performance_metrics", "event_performance"]}
 {"index": {"_index": "pxp-logs-2025.09.08"}}
-{"@timestamp": "2025-09-08T14:30:18.456Z", "level": "error", "logger": "pxpoint.auth.service", "message": "Authentication failed", "correlation_id": "auth-004", "component": "auth", "user_id": "user123", "status": "failed", "error_code": "INVALID_CREDENTIALS", "application": "pxpoint", "log_type": "application", "log_source": "filebeat"}
+{"@timestamp": "2025-09-08T14:30:18.456Z", "level": "error", "logger": "application", "message": "Worker process failed", "correlation_pipeline_id": "pipeline-1725804615-123-abc123", "correlation_process_id": "pipeline-1725804615-123-abc123-proc-data-validator-mno345", "correlation_activity_id": "pipeline-1725804615-123-abc123-proc-data-validator-mno345-act-validation-pqr678", "component": "data-validator", "process_type": "data-validator", "worker_type": "data-validator", "success": false, "error_code": "VALIDATION_FAILED", "application": "pxpoint", "log_type": "application", "log_source": "filebeat", "tags": ["has_pipeline_correlation", "has_process_correlation", "has_activity_correlation"]}
+{"index": {"_index": "pxp-logs-2025.09.08"}}
+{"@timestamp": "2025-09-08T14:30:19.567Z", "level": "info", "logger": "application", "message": "Process completed successfully: orchestrator", "correlation_pipeline_id": "pipeline-1725804615-123-abc123", "correlation_process_id": "pipeline-1725804615-123-abc123-proc-orchestrator-def456", "component": "orchestrator", "event_type": "process_end", "process_type": "orchestrator", "success": true, "total_processing_time_ms": 4344.0, "workers_spawned": 3.0, "application": "pxpoint", "log_type": "application", "log_source": "filebeat", "tags": ["has_pipeline_correlation", "has_process_correlation", "event_process_end", "performance_metrics"]}
 EOF
 
     curl -s -X POST "http://localhost:9200/_bulk" -H "Content-Type: application/x-ndjson" --data-binary @/tmp/sample_kibana_data.json > /dev/null
@@ -43,6 +46,8 @@ EOF
     # Wait for data to be indexed
     sleep 2
     DATA_COUNT=$(curl -s "http://localhost:9200/pxp-logs-*/_count" | jq -r '.count' 2>/dev/null)
+else
+    echo "✅ Found existing data in pxp-logs-* indices"
 fi
 
 echo "✅ Found $DATA_COUNT documents in pxp-logs-* indices"
@@ -102,15 +107,33 @@ echo "   • Time range: Last 24 hours"
 echo ""
 echo "🔍 Key fields available:"
 echo "   • @timestamp: Log timestamp"
-echo "   • level: Log level (info, warn, error)" 
+echo "   • level: Log level (info, warn, error, debug, critical)" 
 echo "   • logger: Logger name"
 echo "   • message: Log message"
-echo "   • correlation_id: Request correlation ID"
+echo "   • correlation_pipeline_id: Pipeline-level correlation ID"
+echo "   • correlation_process_id: Process-level correlation ID"
+echo "   • correlation_activity_id: Activity-level correlation ID"
+echo "   • correlation_full_id: Most specific correlation ID available"
 echo "   • component: Application component"
-echo "   • status: Operation status"
+echo "   • process_type: Type of process (orchestrator, geo-processor, etc.)"
+echo "   • activity_name: Activity name within process"
+echo "   • event_type: Event type (process_start, process_end, performance)"
+echo "   • operation: Specific operation being performed"
+echo "   • duration_ms, processing_time_ms: Performance metrics"
 echo ""
 echo "💡 Try these searches in Discover:"
 echo "   • level:error (find all errors)"
-echo "   • component:database (database-related logs)"
-echo "   • status:failed (failed operations)"
-echo "   • correlation_id:* (logs with correlation IDs)"
+echo "   • process_type:geo-processor (geo-processing logs)"
+echo "   • event_type:performance (performance measurements)"
+echo "   • correlation_pipeline_id:pipeline-* (all logs for a pipeline)"
+echo "   • correlation_process_id:*-proc-orchestrator-* (orchestrator logs)"
+echo "   • correlation_activity_id:*-act-* (activity-level logs)"
+echo "   • success:false (failed operations)"
+echo "   • tags:performance_metrics (logs with timing data)"
+echo "   • algorithm:rtree (specific algorithm performance)"
+echo ""
+echo "🎯 Pipeline Error Tracing Examples:"
+echo "   • Find pipeline errors: level:error AND correlation_pipeline_id:YOUR_PIPELINE_ID"
+echo "   • Trace activity flow: correlation_activity_id:YOUR_ACTIVITY_ID"
+echo "   • Performance analysis: event_type:performance AND duration_ms:>100"
+echo "   • Process failures: event_type:process_end AND success:false"

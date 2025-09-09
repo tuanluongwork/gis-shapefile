@@ -13,15 +13,21 @@ A flexible and configurable ELK (Elasticsearch, Logstash, Kibana) stack with Fil
 
 - **Configurable**: Use environment variables to customize for any log format
 - **Multiple Log Formats**: Supports JSON, plain text, Apache logs, and custom formats
+- **Hierarchical Correlation Tracking**: Advanced support for Pipeline → Process → Activity correlation IDs
+- **Error Pipeline Tracing**: Easily trace errors across multi-process workflows
+- **Performance Analytics**: Built-in support for performance metrics and timing data
 - **Scalable**: Configurable resource allocation and performance settings
 - **Docker-based**: Easy deployment with Docker Compose
-- **Template Configurations**: Pre-built configs for common use cases
+- **Template Configurations**: Pre-built configs for common use cases including cpp/log-services
 
 ## 🚀 Quick Start
 
 1. **Choose a configuration template:**
    ```bash
-   # For JSON logs (like log-services)
+   # For PXPoint cpp/log-services with correlation tracking
+   cp .env.pxpoint .env
+   
+   # For generic JSON logs
    cp .env.example .env
    
    # For simple text logs
@@ -131,6 +137,72 @@ The stack supports custom Grok patterns for parsing different log formats:
 ### Field Extraction
 - `CORRELATION_ID_PATTERN`: Extract correlation IDs from log messages
 - `THREAD_PATTERN`: Extract thread information
+
+## 🔗 Hierarchical Correlation Tracking
+
+The ELK stack includes advanced support for hierarchical correlation tracking, specifically designed for multi-process applications like PXPoint that use the cpp/log-services library.
+
+### Correlation Hierarchy
+
+The system supports three levels of correlation:
+
+1. **Pipeline ID** (`pipeline-1234567890-abc123`): End-to-end business transaction
+2. **Process ID** (`pipeline-1234567890-abc123-proc-orchestrator-def456`): Individual processes within a pipeline  
+3. **Activity ID** (`...proc-orchestrator-def456-act-data-processing-ghi789`): Fine-grained activities within processes
+
+### Correlation Fields in Elasticsearch
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| `correlation_pipeline_id` | Pipeline-level correlation ID | `pipeline-1725804615-123-abc123` |
+| `correlation_process_id` | Process-level correlation ID | `pipeline-1725804615-123-abc123-proc-geo-processor-def456` |
+| `correlation_activity_id` | Activity-level correlation ID | `...proc-geo-processor-def456-act-coordinate-transformation-ghi789` |
+| `correlation_full_id` | Most specific correlation ID available | Automatically set to the most granular ID |
+| `pipeline_timestamp` | Pipeline start timestamp (extracted) | `1725804615` |
+| `process_type` | Type of process | `orchestrator`, `geo-processor`, `data-validator` |
+| `activity_name` | Name of activity | `coordinate_transformation`, `data_validation` |
+
+### Error Pipeline Tracing
+
+Track errors across your entire multi-process pipeline:
+
+```bash
+# Find all errors in a specific pipeline
+level:error AND correlation_pipeline_id:"pipeline-1725804615-123-abc123"
+
+# Trace activity-level errors
+correlation_activity_id:"*-act-data_processing-*" AND level:error
+
+# Find failed processes
+event_type:process_end AND success:false
+```
+
+### Performance Analysis
+
+Analyze performance across correlation boundaries:
+
+```bash
+# Find slow operations across all processes
+event_type:performance AND duration_ms:>1000
+
+# Performance by process type
+process_type:geo-processor AND tags:performance_metrics
+
+# Algorithm performance comparison
+algorithm:rtree AND event_type:performance
+```
+
+### Testing Correlation Tracking
+
+Test the correlation tracking functionality:
+
+```bash
+# Run the correlation tracking test
+./scripts/tools/test-correlation-tracking.sh
+
+# Configure Kibana with sample correlation data
+./scripts/tools/configure-kibana-analytics.sh
+```
 
 ## 🧪 Log Generator for Testing
 
